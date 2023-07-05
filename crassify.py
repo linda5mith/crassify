@@ -11,7 +11,8 @@ from datetime import datetime
 pd.set_option('display.max_columns', None)
 
 def map_genome_to_proteome(path_to_prots):
-    '''Takes a folder of protein fasta files as input, maps the genome to protein ID's and gets the genome length.'''
+    '''Takes a folder of protein fasta files as input, 
+    maps the genome to protein ID's and gets the genome length.'''
     if os.path.isdir(path_to_prots):
         prots = list_files(path_to_prots)
         if prots:
@@ -31,53 +32,39 @@ def map_genome_to_proteome(path_to_prots):
             genome_protein_map = pd.DataFrame.from_dict(proteins, orient='index')
             genome_lens = pd.DataFrame.from_dict(genome_lens, orient='index')
             genome_lens.columns = ['genome_length']
-            print(genome_lens.head())
-            print(genome_protein_map.head())
             protein_metadata = pd.merge(genome_protein_map, genome_lens, left_index=True, right_index=True)
-            protein_metadata.to_csv('protein_dict.csv')
-            return protein_metadata
+            protein_metadata = protein_metadata.reset_index()
+            protein_metadata = protein_metadata.rename(columns={'index': 'ID'})
+            # Transpose df to have columns ncbi_acc, prot_acc, genome_length
+            melt = pd.melt(protein_metadata, id_vars=['ID','genome_length'])
+            melt = melt[melt.value.notna()]
+            melt = melt[['ID','genome_length','value']] \
+                .sort_values(by='ID') \
+                .reset_index(drop = True)
+            melt.to_csv('metadata_melt.csv', index=False)
+            return melt
     else:
         print(f'{path_to_prots} is empty or does not contain fasta files.\nCheck -p path/to/proteins.')
 
-
-def merge_metadata_maps(maps, path_to_metadata):
-    # Merge with metadata to get genome length
-    metadata = pd.read_csv(path_to_metadata)
-    maps = maps.reset_index()
-    maps = maps.rename(columns={'index': 'ID'})
-    print(metadata.columns)
-    # Make 2 new columns to avoid '.' contained in ncbi_acc / ID merge issues
-    maps['ID'] = maps['ID'].str.split('.').str[0]
-    metadata['ID'] = metadata['id'].str.split('.').str[0]
-    #df = pd.merge(maps, metadata[['id','length']], left_on='ncbi_acc', right_on='id', how='left')
-    df = pd.merge(maps, metadata[['ID','length']], left_on='ID', right_on='ID', how='left')
-    # Transpose df to have columns ncbi_acc, prot_acc, length
-    melt = pd.melt(df, id_vars=['ID','length'])
-    melt = melt[melt.value.notna()]
-    melt = melt[['ID','length','value']] \
-        .sort_values(by='ID') \
-        .reset_index(drop = True) \
-        .rename(columns={'length':'genome_length'})
-    melt.to_csv('metadata_melt.csv', index=False)
-    return melt
-
-def merge_metadata_matches(matches, metadata):
+def merge_metadata_matches(matches, input_metadata, db_metadata):
+    '''Merges protein metadata with diamond output matches.tsv'''
     print(f'{datetime.now()}: Merging metadata with matches.tsv protein alignments.')
     pbar = tqdm(total=100)
-    matches = pd.read_csv(path_to_matches, sep='\t', header=None, low_memory=False)
+    matches = pd.read_csv(matches, sep='\t', header=None, low_memory=False)
     matches.columns = ['qseqid','sseqid', "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
-    matches = matches.merge(metadata, left_on=['qseqid'], right_on=['value']) \
-        .rename(columns={'genome_length':'qseqid_genome_length','ID':'qseqid_genome'}) \
+    matches = matches.merge(input_metadata, left_on=['qseqid'], right_on=['value']) \
+        .rename(columns={'genome_length':'qseqid_genome_length','ID':'qseqid_ID'}) \
         .drop('value', axis=1)
-    pbar.update(45)
-    matches = matches.merge(metadata, left_on=['sseqid'], right_on=['value']) \
-        .rename(columns={'genome_length':'sseqid_genome_length','ID':'sseqid_genome'}) \
-        .drop('value', axis=1)
-    pbar.update(45)
-    matches = matches[matches.qseqid_genome != matches.sseqid_genome]
-    #matches.to_csv('matches_merged_07_06_23.csv')
-    pbar.update(10)
     print(matches.head())
+    pbar.update(45)
+    db_metadata = pd.read_csv(db_metadata, low_memory=False)
+    matches = matches.merge(db_metadata, left_on=['sseqid'], right_on=['protein_ncbi_acc']) \
+        .rename(columns={'genome_length':'sseqid_genome_length','protein_ncbi_acc':'sseqid_ID'})
+    pbar.update(45)
+    print(matches.head())
+    matches = matches[matches.qseqid_ID != matches.sseqid_ID]
+    pbar.update(10)
+    matches.to_csv('matches_metadata.csv', index=False)
     return matches
 
 def calc_dist(df):
@@ -88,19 +75,27 @@ def calc_dist(df):
     dists = df[(df.qseqid_genome_length.notna()) & (df.sseqid_genome_length.notna())]
     #dists.to_csv('matched_merged_dists_metadata_nona.csv',index=False)
     df = dists.sort_values(by=['qseqid','sseqid','sstart','send'])
+    df.to_csv('df_so_far.csv',index=False)
     pbar.update(50)
     s = df.groupby(['qseqid', 'sseqid'])['send'].shift()
     df['length'] = df['sstart'].lt(s) * df['sstart'].sub(s.fillna(0)) + df['length']
     df['conserved_AA_#'] = (df['length']/100)*df['pident']
     df[['conserved_AA_#','qseqid_genome_length','sseqid_genome_length']] = df[['conserved_AA_#','qseqid_genome_length','sseqid_genome_length']].astype(float)
-    df_grp = df.groupby(['qseqid_genome', 'sseqid_genome']).agg({'conserved_AA_#':'sum', 
+    df_grp = df.groupby(['qseqid_ID', 'sseqid_ID']).agg({'conserved_AA_#':'sum', 
                                                         'qseqid_genome_length':'first',
                                                         'sseqid_genome_length':'first',
                                                         'length':'sum'}).reset_index()
-    df_grp.to_csv('matched_merged_dists.csv',index=False)
+    cols_to_use = df.columns.difference(df_grp.columns)
+    cols_to_use = cols_to_use.insert(0,'sseqid_ID')
+    df_best_hit = df_grp.merge(df[cols_to_use], left_on=['sseqid_ID'], right_on=['sseqid_ID'], how='outer')
+    df_best_hit = df_best_hit.sort_values(by=['qseqid_ID','conserved_AA_#'], ascending=False)
+    idx = df_best_hit.groupby(['qseqid_ID','sseqid_ID'])['conserved_AA_#'].transform(max) == df_best_hit['conserved_AA_#']
+    df_best_hit = df_best_hit[idx] 
+    os.mkdir('./crassify_output')
+    df_best_hit.to_csv('./crassify_output/taxonomy_best_hit.csv',index=False)
     df_grp['distance'] = 1-df_grp['conserved_AA_#']/((df_grp['qseqid_genome_length']+df_grp['sseqid_genome_length'])/2)
     df_dist = df_grp.round(6)
-    df_dist.to_csv('matched_merged_dists.csv',index=False)
+    df_dist.to_csv('./crassify_output/dists.csv',index=False)
     pbar.update(50)
     return df_dist 
 
@@ -186,18 +181,17 @@ def get_basename(path_to_file):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    # parser.add_argument("-i", dest="diamond_matches", required=True,
-    #                     help="path to diamond matches.tsv", metavar="MATCHES")
-    parser.add_argument("-p", dest="path_to_proteins", required=True,
-                        help="path to proteomes.", metavar="PROTEINS")
-    # parser.add_argument("-m", dest="path_to_metadata", required=True,
-    #                     help="path to metadata.", metavar="METADATA")
+    parser.add_argument("-m", dest="diamond_matches", required=True,
+                        help="path to diamond matches.tsv", metavar="MATCHES")
+    parser.add_argument("-p", dest="proteins", required=True,
+                        help="path to unclassifed proteomes.", metavar="PROTEINS")
+    parser.add_argument("-db", dest="db_metadata", required=True,
+                        help="path to database metadata.", metavar="METADATA")
     args = parser.parse_args()
 
-    genome_prot_map = map_genome_to_proteome(args.path_to_proteins)
-    # maps = merge_metadata_maps(genome_prot_map, args.path_to_metadata)
-    # matches = merge_metadata_matches(args.diamond_matches, maps)
-    # dists = calc_dist(matches)
+    genome_prot_map = map_genome_to_proteome(args.proteins)
+    matches = merge_metadata_matches(args.diamond_matches, genome_prot_map, args.db_metadata)
+    dists = calc_dist(matches)
     # phylip = to_phylip(dists)
     # tree = plot_tree('/home/administrator/phd/crass_DB/May_2023_317_proteomes/crassify/dist_matrix_phylim.newick', args.path_to_metadata)
 
