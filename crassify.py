@@ -75,10 +75,11 @@ def calc_dist(df):
     print(f'{datetime.now()}: Calculating distance between genomes.')
     pbar = tqdm(total=100)
     try:
-        os.mkdir(f'./crassify_output_{}')
+        os.mkdir(f'./crassify_output')
     except Exception as e:
         print(e)
         print('Directory already exists.')
+    df['conserved_AA_#'] = (df['length']/100)*df['pident']
     df_proteins= df.sort_values(by=['qseqid','sseqid','sstart','send'])
     df_proteins = df_proteins.loc[df_proteins.reset_index().groupby(['qseqid'])['conserved_AA_#'].idxmax()]
     df_proteins = df_proteins.reset_index(drop=True)
@@ -87,6 +88,7 @@ def calc_dist(df):
     df_genome_hits = df.groupby(['qseqid_ID', 'genome_ncbi_acc','virus'])[['conserved_AA_#','length']].sum().reset_index() \
     .sort_values(by=['conserved_AA_#'], ascending=False)
     df_genome_hits = df_genome_hits.groupby('qseqid_ID').head(5).reset_index(drop=True)
+    df_genome_hits.to_csv('./crassify_output/genome_hits.csv',index=False)
     df_meta = df[['genome_ncbi_acc','Realm',
        'Subrealm', 'Kingdom', 'Subkingdom', 'Phylum', 'Subphylum', 'Class',
        'Subclass', 'Order', 'Suborder', 'Family', 'Subfamily', 'Genus',
@@ -95,12 +97,18 @@ def calc_dist(df):
        'Virus isolate designation', 'Virus GENBANK accession',
        'Virus REFSEQ accession', 'Genome coverage', 'Genome composition',
        'Host source']]
-    df_genome_hits.merge(df_meta, left_on=['genome_ncbi_acc'], right_on=['genome_ncbi_acc'], how='left') \
+    df_genome_hits = df_genome_hits.merge(df_meta, left_on=['genome_ncbi_acc'], right_on=['genome_ncbi_acc'], how='left') \
         .drop_duplicates(keep='first').reset_index(drop=True)
     df_genome_hits.to_csv('./crassify_output/protein_hits.csv', index=False)
     # calculate distance 
-    df_grp['distance'] = 1-df_grp['conserved_AA_#']/((df_grp['qseqid_genome_length']+df_grp['sseqid_genome_length'])/2)
-    df_dist = df_grp.round(6)
+    df_dist = df.groupby(['qseqid_ID','virus']).agg({'conserved_AA_#':'sum', 
+                                                        'qseqid_genome_length':'first',
+                                                        'sseqid_genome_length':'first',
+                                                        'length':'sum'}).reset_index()
+    df_dist['distance'] = 1-(df_dist['conserved_AA_#']*3)/((df_dist['qseqid_genome_length']+df_dist['sseqid_genome_length'])/2)
+    df_dist = df_dist.sort_values(by=['qseqid_ID','distance'], ascending=True)
+    df_dist = df_dist[['qseqid_ID','virus','distance']]
+    df_dist = df_dist.round(6)
     df_dist.to_csv('./crassify_output/dists.csv',index=False)
     pbar.update(50)
     return df_dist 
@@ -109,8 +117,8 @@ def to_phylip(df_dist):
     '''Converts distances to PHYLIP format.'''
     print(f'{datetime.now()}: Converting distance matrix to PHYLIP format.')
     pbar = tqdm(total=100)
-    matrix = df_dist.pivot_table(columns='qseqid_genome', index='sseqid_genome', values='distance').reset_index()
-    matrix = matrix.set_index('sseqid_genome')
+    matrix = df_dist.pivot_table(columns='qseqid_ID', index='virus', values='distance').reset_index()
+    matrix = matrix.set_index('virus')
     #matrix.to_csv('dist_matrix_phylim_raw.dist', header=True, index=True, sep =' ')
     # Check dimensions of matrix
     cols = matrix.columns.to_list()

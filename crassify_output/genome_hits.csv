@@ -1,0 +1,21 @@
+qseqid_ID,genome_ncbi_acc,virus,conserved_AA_#,length
+AT10B_S2_NODE_1_length_122269_cov_11,MK494112.1,Streptomyces phage EGole,21445.905,28517
+AT10B_S2_NODE_1_length_122269_cov_11,MK977711.1,Streptomyces phage Evy,21439.397,28155
+AT10B_S2_NODE_1_length_122269_cov_11,KM652554.1,Streptomyces phage Jay2Jay,21194.475,27765
+AT10B_S2_NODE_1_length_122269_cov_11,MF347639.1,Streptomyces phage Samisti12,20974.637,27917
+AT10B_S2_NODE_1_length_122269_cov_11,MF347638.1,Streptomyces phage Peebs,20952.953999999998,27763
+BC2_S2_NODE_1_length_59166_cov_57,MH153810.1,Gordonia phage Sour,683.887,2109
+BC2_S2_NODE_1_length_59166_cov_57,MK059749.1,Mycobacterium phage CRB2,625.096,1736
+BC2_S2_NODE_1_length_59166_cov_57,MH744423.1,Mycobacterium phage Saguaro,587.633,1566
+AT6CD3_S11_NODE_1_length_40506_cov_6,AF396866.1,Myxococcus phage Mx8,536.846,1318
+BC2_S2_NODE_1_length_59166_cov_57,KR997932.1,Mycobacterium phage Godines,504.198,1375
+BC2_S2_NODE_1_length_59166_cov_57,AY129334.1,Mycobacterium phage Rosebush,477.072,1250
+AT6CD3_S11_NODE_1_length_40506_cov_6,JN939332.1,Brucella phage Pr,225.92200000000003,634
+AT6CD3_S11_NODE_1_length_40506_cov_6,JN939331.1,Brucella phage Tb,225.92200000000003,634
+AT6CD3_S11_NODE_1_length_40506_cov_6,KY829116.2,Acinetobacter phage WCHABP1,122.016,246
+AT6CD3_S11_NODE_1_length_40506_cov_6,KY670595.1,Acinetobacter phage WCHABP12,122.016,246
+AT60_S4_NODE_1_length_56564_cov_17,MK016490.1,Arthrobacter phage Anjali,102.9,210
+AT60_S4_NODE_1_length_56564_cov_17,AY369265.2,Burkholderia phage Bcep1,94.956,193
+AT60_S4_NODE_1_length_56564_cov_17,AP013544.1,uncultured phage_MedDCM-OCT-S45-C18,94.0,200
+AT60_S4_NODE_1_length_56564_cov_17,AY939843.2,Prochlorococcus phage P-SSP7,91.01400000000001,197
+AT60_S4_NODE_1_length_56564_cov_17,KR072689.1,Paracoccus phage Shpa,90.07200000000002,216
