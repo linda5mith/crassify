@@ -24,8 +24,6 @@ def map_genome_to_proteome(path_to_prots):
                 records = list(SeqIO.parse(seq,'fasta'))
                 record_lens = [len(record.seq) for record in records]
                 genome_len = sum(record_lens)*3
-                print(nt_ID)
-                print('Genome length:', sum(record_lens)*3)
                 record_ids = [record.id for record in records]
                 proteins[nt_ID] = record_ids
                 genome_lens[nt_ID] = genome_len
@@ -55,16 +53,14 @@ def merge_metadata_matches(matches, input_metadata, db_metadata):
     matches = matches.merge(input_metadata, left_on=['qseqid'], right_on=['value']) \
         .rename(columns={'genome_length':'qseqid_genome_length','ID':'qseqid_ID'}) \
         .drop('value', axis=1)
-    print(matches.head())
     pbar.update(45)
     db_metadata = pd.read_csv(db_metadata, low_memory=False)
     matches = matches.merge(db_metadata, left_on=['sseqid'], right_on=['protein_ncbi_acc']) \
-        .rename(columns={'genome_length':'sseqid_genome_length','protein_ncbi_acc':'sseqid_ID'})
+        .rename(columns={'genome_length':'sseqid_genome_length','protein_ncbi_acc':'sseqid_protein_acc',
+        'genome_ncbi_acc':'sseqid_genome_acc','virus':'sseqid_virus'})
     pbar.update(45)
-    print(matches.head())
-    matches = matches[matches.qseqid_ID != matches.sseqid_ID]
+    matches = matches[matches.qseqid_ID != matches.sseqid_genome_acc]
     pbar.update(10)
-    matches.to_csv('matches_metadata.csv', index=False)
     return matches
 
 def calc_dist(df):
@@ -72,43 +68,53 @@ def calc_dist(df):
     Finds top 5 highest taxonomic matches based on summation of conserved AA's.
     Returns distance matrix based on formula 1-(ORFs_A)+(ORFs_B)/(len(Genome_A+Genome_B)/2)
     '''
-    print(f'{datetime.now()}: Calculating distance between genomes.')
+    print(f'{datetime.now()}: Calculating distances between genomes.')
+    now = datetime.now()
+    dt_string = now.strftime("%d/%m/%Y_%H:%M:%S")
+    outpath = f'./crassify_{dt_string}'
     pbar = tqdm(total=100)
     try:
-        os.mkdir(f'./crassify_output')
+        os.mkdir('./crassify_output')
     except Exception as e:
         print(e)
-        print('Directory already exists.')
+    # Return best ICTV protein hit for qseqid
     df['conserved_AA_#'] = (df['length']/100)*df['pident']
     df_proteins= df.sort_values(by=['qseqid','sseqid','sstart','send'])
     df_proteins = df_proteins.loc[df_proteins.reset_index().groupby(['qseqid'])['conserved_AA_#'].idxmax()]
+    df_proteins= df.sort_values(by=['qseqid','conserved_AA_#','sseqid_virus'])
     df_proteins = df_proteins.reset_index(drop=True)
     df_proteins.to_csv('./crassify_output/protein_hits.csv',index=False)
     pbar.update(50)
-    df_genome_hits = df.groupby(['qseqid_ID', 'genome_ncbi_acc','virus'])[['conserved_AA_#','length']].sum().reset_index() \
+    df_genome_hits = df.groupby(['qseqid_ID','sseqid_genome_acc','sseqid_virus'])[['conserved_AA_#','length']].sum().reset_index() \
     .sort_values(by=['conserved_AA_#'], ascending=False)
     df_genome_hits = df_genome_hits.groupby('qseqid_ID').head(5).reset_index(drop=True)
-    df_genome_hits.to_csv('./crassify_output/genome_hits.csv',index=False)
-    df_meta = df[['genome_ncbi_acc','Realm',
-       'Subrealm', 'Kingdom', 'Subkingdom', 'Phylum', 'Subphylum', 'Class',
-       'Subclass', 'Order', 'Suborder', 'Family', 'Subfamily', 'Genus',
-       'Subgenus', 'Species', 'Exemplar or additional isolate',
-       'Virus name(s)', 'Virus name abbreviation(s)',
-       'Virus isolate designation', 'Virus GENBANK accession',
-       'Virus REFSEQ accession', 'Genome coverage', 'Genome composition',
-       'Host source']]
-    df_genome_hits = df_genome_hits.merge(df_meta, left_on=['genome_ncbi_acc'], right_on=['genome_ncbi_acc'], how='left') \
+    df_meta = df[['sseqid_genome_acc','Realm','Subrealm', 'Kingdom', 'Subkingdom', 'Phylum', 'Subphylum', 'Class',
+       'Subclass', 'Order', 'Suborder', 'Family', 'Subfamily', 'Genus','Subgenus', 'Species', 'Exemplar or additional isolate',
+       'Virus name(s)', 'Virus name abbreviation(s)','Virus isolate designation', 'Virus GENBANK accession',
+       'Virus REFSEQ accession', 'Genome coverage', 'Genome composition','Host source']]
+    df_genome_hits = df_genome_hits.merge(df_meta, left_on=['sseqid_genome_acc'], right_on=['sseqid_genome_acc'], how='left') \
         .drop_duplicates(keep='first').reset_index(drop=True)
-    df_genome_hits.to_csv('./crassify_output/protein_hits.csv', index=False)
+    df_genome_hits.to_csv('./crassify_output/genome_hits.csv',index=False)
     # calculate distance 
-    df_dist = df.groupby(['qseqid_ID','virus']).agg({'conserved_AA_#':'sum', 
-                                                        'qseqid_genome_length':'first',
-                                                        'sseqid_genome_length':'first',
-                                                        'length':'sum'}).reset_index()
-    df_dist['distance'] = 1-(df_dist['conserved_AA_#']*3)/((df_dist['qseqid_genome_length']+df_dist['sseqid_genome_length'])/2)
-    df_dist = df_dist.sort_values(by=['qseqid_ID','distance'], ascending=True)
-    df_dist = df_dist[['qseqid_ID','virus','distance']]
-    df_dist = df_dist.round(6)
+    # group by qseqid to return best protein hit only for that qseqid
+    df.to_csv('./crassify_output/df_so_far.csv', index=False)
+    df = df.groupby(['qseqid']).agg({'sseqid':'first','conserved_AA_#':'max',
+                              'qseqid_ID':'first',
+                              'sseqid_genome_acc':'first',
+                              'qseqid_genome_length':'first',
+                              'sseqid_genome_length':'first',
+                              'sseqid_virus':'first',
+                              'length':'first'}).reset_index()
+    df = df.groupby(['qseqid_ID','sseqid_genome_acc']).agg({'conserved_AA_#':'sum', 
+                                                            'qseqid_genome_length':'first',
+                                                            'sseqid_genome_length':'first',
+                                                            'sseqid_virus':'first',
+                                                            'length':'sum'}).reset_index()
+    df['distance'] = 1-(df['conserved_AA_#']*3)/((df['qseqid_genome_length']+df['sseqid_genome_length'])/2)
+    df = df[df.qseqid_ID != df.sseqid_genome_acc]
+    df['distance'] = df['distance'].abs()
+    df = df.sort_values(by=['qseqid_ID','distance'])
+    df_dist = df.round(6)
     df_dist.to_csv('./crassify_output/dists.csv',index=False)
     pbar.update(50)
     return df_dist 
@@ -121,10 +127,10 @@ def to_phylip(df_dist):
     matrix = matrix.set_index('virus')
     #matrix.to_csv('dist_matrix_phylim_raw.dist', header=True, index=True, sep =' ')
     # Check dimensions of matrix
-    cols = matrix.columns.to_list()
-    indx = matrix.index.to_list()
-    cols_missing = list(set(cols) - set(indx))
-    idx_missing = list(set(indx) - set(cols))
+    cols = dist_piv.columns.to_list()
+    indx = dist_piv.index.to_list()
+    cols_missing = list(set(indx) - set(cols))
+    idx_missing = list(set(cols) - set(indx))
     pbar.update(50)
     if len(cols)>len(indx):
         # insert extra column values into index
@@ -134,7 +140,7 @@ def to_phylip(df_dist):
             row_to_append.insert(0, col)
             matrix.loc[matrix.shape[0]] = row_to_append
             matrix = matrix.set_index('sseqid_genome')
-    elif len(indx)>len(cols):
+    if len(indx)>len(cols):
         # insert extra index values as columns
         for idx in idx_missing:
             matrix[idx] = 1
@@ -156,7 +162,7 @@ def to_phylip(df_dist):
         .astype(float) \
         .round(5) \
         .clip(lower = 0)
-    matrix.to_csv('dist_matrix_phylim.dist', header=True, index=True, sep =' ')
+    matrix.to_csv('./crassify_output/dist_matrix_phylip.dist', header=True, index=True, sep =' ')
     pbar.update(50)
     return matrix
 
@@ -206,7 +212,7 @@ if __name__ == "__main__":
     genome_prot_map = map_genome_to_proteome(args.proteins)
     matches = merge_metadata_matches(args.diamond_matches, genome_prot_map, args.db_metadata)
     dists = calc_dist(matches)
-    # phylip = to_phylip(dists)
+    #phylip = to_phylip(dists)
     # tree = plot_tree('/home/administrator/phd/crass_DB/May_2023_317_proteomes/crassify/dist_matrix_phylim.newick', args.path_to_metadata)
 
 
