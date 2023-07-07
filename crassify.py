@@ -72,13 +72,15 @@ def calc_dist(df):
     Finds top 5 highest taxonomic matches based on summation of conserved AA's.
     Returns distance matrix based on formula 1-(ORFs_A)+(ORFs_B)/(len(Genome_A+Genome_B)/2)
     '''
-    print(f'{datetime.now()}: Calculating distance between genomes.')
+    print(f'{datetime.now()}: Calculating distances between genomes.')
+    now = datetime.now()
+    dt_string = now.strftime("%d/%m/%Y_%H:%M:%S")
+    outpath = f'./crassify_{dt_string}'
     pbar = tqdm(total=100)
     try:
-        os.mkdir(f'./crassify_output')
+        os.mkdir('./crassify_output')
     except Exception as e:
         print(e)
-        print('Directory already exists.')
     df['conserved_AA_#'] = (df['length']/100)*df['pident']
     df_proteins= df.sort_values(by=['qseqid','sseqid','sstart','send'])
     df_proteins = df_proteins.loc[df_proteins.reset_index().groupby(['qseqid'])['conserved_AA_#'].idxmax()]
@@ -88,7 +90,6 @@ def calc_dist(df):
     df_genome_hits = df.groupby(['qseqid_ID', 'genome_ncbi_acc','virus'])[['conserved_AA_#','length']].sum().reset_index() \
     .sort_values(by=['conserved_AA_#'], ascending=False)
     df_genome_hits = df_genome_hits.groupby('qseqid_ID').head(5).reset_index(drop=True)
-    df_genome_hits.to_csv('./crassify_output/genome_hits.csv',index=False)
     df_meta = df[['genome_ncbi_acc','Realm',
        'Subrealm', 'Kingdom', 'Subkingdom', 'Phylum', 'Subphylum', 'Class',
        'Subclass', 'Order', 'Suborder', 'Family', 'Subfamily', 'Genus',
@@ -99,7 +100,7 @@ def calc_dist(df):
        'Host source']]
     df_genome_hits = df_genome_hits.merge(df_meta, left_on=['genome_ncbi_acc'], right_on=['genome_ncbi_acc'], how='left') \
         .drop_duplicates(keep='first').reset_index(drop=True)
-    df_genome_hits.to_csv('./crassify_output/protein_hits.csv', index=False)
+    df_genome_hits.to_csv('./crassify_output/genome_hits.csv',index=False)
     # calculate distance 
     df_dist = df.groupby(['qseqid_ID','virus']).agg({'conserved_AA_#':'sum', 
                                                         'qseqid_genome_length':'first',
