@@ -39,7 +39,6 @@ def map_genome_to_proteome(path_to_prots):
             melt = melt[['ID','genome_length','value']] \
                 .sort_values(by='ID') \
                 .reset_index(drop = True)
-            melt.to_csv('metadata_melt.csv', index=False)
             return melt
     else:
         print(f'{path_to_prots} is empty or does not contain fasta files.\nCheck -p path/to/proteins.')
@@ -55,11 +54,11 @@ def merge_metadata_matches(matches, input_metadata, db_metadata):
         .drop('value', axis=1)
     pbar.update(45)
     db_metadata = pd.read_csv(db_metadata, low_memory=False)
-    matches = matches.merge(db_metadata, left_on=['sseqid'], right_on=['protein_ncbi_acc']) \
-        .rename(columns={'genome_length':'sseqid_genome_length','protein_ncbi_acc':'sseqid_protein_acc',
-        'genome_ncbi_acc':'sseqid_genome_acc','virus':'sseqid_virus'})
+    matches = matches.merge(db_metadata, left_on=['sseqid'], right_on=['protein_ncbi_acc'], how='left') \
+        .rename(columns={'genome_length':'sseqid_genome_length'}) #,'protein_ncbi_acc':'sseqid_protein_acc'})
+        #''genome_ncbi_acc':'sseqid_genome_acc','virus':'sseqid_virus'})
+    matches.to_csv('matches_merged.csv',index=False)
     pbar.update(45)
-    matches = matches[matches.qseqid_ID != matches.sseqid_genome_acc]
     pbar.update(10)
     return matches
 
@@ -69,53 +68,54 @@ def calc_dist(df):
     Returns distance matrix based on formula 1-(ORFs_A)+(ORFs_B)/(len(Genome_A+Genome_B)/2)
     '''
     print(f'{datetime.now()}: Calculating distances between genomes.')
+    df.to_csv('what_is_happening_DF.csv',index=False)
     now = datetime.now()
-    dt_string = now.strftime("%d/%m/%Y_%H:%M:%S")
+    dt_string = now.strftime("%d.%m.%Y_%H:%M:%S")
     outpath = f'./crassify_{dt_string}'
     pbar = tqdm(total=100)
     try:
-        os.mkdir('./crassify_output')
+        os.mkdir(outpath)
     except Exception as e:
         print(e)
-    # Return best ICTV protein hit for qseqid
     df['conserved_AA_#'] = (df['length']/100)*df['pident']
-    df_proteins= df.sort_values(by=['qseqid','sseqid','sstart','send'])
-    df_proteins = df_proteins.loc[df_proteins.reset_index().groupby(['qseqid'])['conserved_AA_#'].idxmax()]
-    df_proteins= df.sort_values(by=['qseqid','conserved_AA_#','sseqid_virus'])
-    df_proteins = df_proteins.reset_index(drop=True)
-    df_proteins.to_csv('./crassify_output/protein_hits.csv',index=False)
+    # taxonomy for each protein hit
+    df_proteins = df.sort_values(by=['qseqid','sseqid','sstart','send']) \
+        .loc[df.reset_index().groupby(['qseqid'])['conserved_AA_#'].idxmax()] \
+        .sort_values(by=['qseqid','conserved_AA_#','virus']) \
+        .reset_index(drop=True) \
+        .to_csv(f'{outpath}/protein_hits.csv',index=False)
+    # return top 5 genome hits 
+    df_genome_hits = df.groupby(['qseqid_ID','genome_ncbi_acc','virus'])[['conserved_AA_#','length']].sum().reset_index() \
+        .sort_values(by=['conserved_AA_#'], ascending=False) \
+        .groupby('qseqid_ID').head(5).reset_index(drop=True) \
+        .merge(df, left_on=['genome_ncbi_acc'], right_on=['genome_ncbi_acc'], how='left', suffixes=('', '_y')) \
+        .drop_duplicates(keep='first').reset_index(drop=True) \
+        .groupby(['qseqid_ID','genome_ncbi_acc'])[['definition','qseqid','sseqid','conserved_AA_#_y','pident','length_y']].agg(lambda x: list(x)).reset_index() \
+        .merge(df, left_on=['genome_ncbi_acc'], right_on=['genome_ncbi_acc'], how='left', suffixes=('', '_y')) \
+        .drop_duplicates(subset=['qseqid_ID','genome_ncbi_acc'], keep='first').reset_index(drop=True)
+    df_genome_hits = df_genome_hits.drop(df_genome_hits.filter(regex='_y$').columns, axis=1) \
+        .drop('conserved_AA_#', axis=1) \
+        .to_csv(f'{outpath}/genome_hits.csv',index=False)
     pbar.update(50)
-    df_genome_hits = df.groupby(['qseqid_ID','sseqid_genome_acc','sseqid_virus'])[['conserved_AA_#','length']].sum().reset_index() \
-    .sort_values(by=['conserved_AA_#'], ascending=False)
-    df_genome_hits = df_genome_hits.groupby('qseqid_ID').head(5).reset_index(drop=True)
-    df_meta = df[['sseqid_genome_acc','Realm','Subrealm', 'Kingdom', 'Subkingdom', 'Phylum', 'Subphylum', 'Class',
-       'Subclass', 'Order', 'Suborder', 'Family', 'Subfamily', 'Genus','Subgenus', 'Species', 'Exemplar or additional isolate',
-       'Virus name(s)', 'Virus name abbreviation(s)','Virus isolate designation', 'Virus GENBANK accession',
-       'Virus REFSEQ accession', 'Genome coverage', 'Genome composition','Host source']]
-    df_genome_hits = df_genome_hits.merge(df_meta, left_on=['sseqid_genome_acc'], right_on=['sseqid_genome_acc'], how='left') \
-        .drop_duplicates(keep='first').reset_index(drop=True)
-    df_genome_hits.to_csv('./crassify_output/genome_hits.csv',index=False)
     # calculate distance 
     # group by qseqid to return best protein hit only for that qseqid
-    df.to_csv('./crassify_output/df_so_far.csv', index=False)
-    df = df.groupby(['qseqid']).agg({'sseqid':'first','conserved_AA_#':'max',
+    df_dist = df.groupby(['qseqid']).agg({'sseqid':'first','conserved_AA_#':'max',
+                              'genome_ncbi_acc':'first',
                               'qseqid_ID':'first',
-                              'sseqid_genome_acc':'first',
                               'qseqid_genome_length':'first',
                               'sseqid_genome_length':'first',
-                              'sseqid_virus':'first',
-                              'length':'first'}).reset_index()
-    df = df.groupby(['qseqid_ID','sseqid_genome_acc']).agg({'conserved_AA_#':'sum', 
-                                                            'qseqid_genome_length':'first',
-                                                            'sseqid_genome_length':'first',
-                                                            'sseqid_virus':'first',
-                                                            'length':'sum'}).reset_index()
-    df['distance'] = 1-(df['conserved_AA_#']*3)/((df['qseqid_genome_length']+df['sseqid_genome_length'])/2)
-    df = df[df.qseqid_ID != df.sseqid_genome_acc]
-    df['distance'] = df['distance'].abs()
-    df = df.sort_values(by=['qseqid_ID','distance'])
-    df_dist = df.round(6)
-    df_dist.to_csv('./crassify_output/dists.csv',index=False)
+                              'virus':'first',
+                              'length':'first'}).reset_index() \
+        .groupby(['qseqid_ID','genome_ncbi_acc']).agg({'conserved_AA_#':'sum', 
+                                'qseqid_genome_length':'first',
+                                'sseqid_genome_length':'first',
+                                'virus':'first',
+                                'length':'sum'}).reset_index()
+    df_dist['distance'] = 1-(df_dist['conserved_AA_#']*3)/((df_dist['qseqid_genome_length']+df_dist['sseqid_genome_length'])/2)
+    df_dist = df_dist.sort_values(by=['qseqid_ID','distance']) \
+        .reset_index(drop=True) \
+        .round(6) \
+        .to_csv(f'{outpath}/dists.csv',index=False)
     pbar.update(50)
     return df_dist 
 
