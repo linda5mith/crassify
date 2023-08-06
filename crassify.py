@@ -68,7 +68,6 @@ def calc_dist(df):
     Returns distance matrix based on formula 1-(ORFs_A)+(ORFs_B)/(len(Genome_A+Genome_B)/2)
     '''
     print(f'{datetime.now()}: Calculating distances between genomes.')
-    df.to_csv('what_is_happening_DF.csv',index=False)
     now = datetime.now()
     dt_string = now.strftime("%d.%m.%Y_%H:%M:%S")
     outpath = f'./crassify_{dt_string}'
@@ -97,16 +96,8 @@ def calc_dist(df):
         .drop('conserved_AA_#', axis=1) \
         .to_csv(f'{outpath}/genome_hits.csv',index=False)
     pbar.update(50)
-    # calculate distance 
-    # group by qseqid to return best protein hit only for that qseqid
-    df_dist = df.groupby(['qseqid']).agg({'sseqid':'first','conserved_AA_#':'max',
-                              'genome_ncbi_acc':'first',
-                              'qseqid_ID':'first',
-                              'qseqid_genome_length':'first',
-                              'sseqid_genome_length':'first',
-                              'virus':'first',
-                              'length':'first'}).reset_index() \
-        .groupby(['qseqid_ID','genome_ncbi_acc']).agg({'conserved_AA_#':'sum', 
+    # calculate distances 
+    df_dist = df.groupby(['qseqid_ID','genome_ncbi_acc']).agg({'conserved_AA_#':'sum', 
                                 'qseqid_genome_length':'first',
                                 'sseqid_genome_length':'first',
                                 'virus':'first',
@@ -118,6 +109,8 @@ def calc_dist(df):
         .to_csv(f'{outpath}/dists.csv',index=False)
     pbar.update(50)
     return df_dist 
+
+# now i have distances 
 
 def to_phylip(df_dist):
     '''Converts distances to PHYLIP format.'''
