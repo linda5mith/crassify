@@ -17,7 +17,8 @@ Set path to crassify installation
 ```PATH=$PATH:/home/user/programs/crassify```
 
 ## 3. Running crassify
-python crassify.py -p /path/to/individual_proteomes -m /path/to/diamond/matches.tsv -db /path/to/metadata/ICTV_metadata.csv
+Sample folders with example inputs are located:
+python crassify.py -p /proteomes -m /diamond_hits/matches.tsv -db /metadata/ICTV_metadata.csv
 
 ## 4. Crassify output
 protein_hits.csv - returns most homologous ICTV viral protein hit for each of your viral proteins that aligned to reference database.

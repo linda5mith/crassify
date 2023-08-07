@@ -1,4 +1,4 @@
-name: crassify_test
+name: crassify
 channels:
   - conda-forge
 dependencies:
