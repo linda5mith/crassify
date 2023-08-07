@@ -58,9 +58,7 @@ def merge_metadata_matches(matches, input_metadata, db_metadata):
         pb.update(task_id=t1, advance=50)
         db_metadata = pd.read_csv(db_metadata, low_memory=False)
         matches = matches.merge(db_metadata, left_on=['sseqid'], right_on=['protein_ncbi_acc'], how='left') \
-            .rename(columns={'genome_length':'sseqid_genome_length'}) #,'protein_ncbi_acc':'sseqid_protein_acc'})
-            #''genome_ncbi_acc':'sseqid_genome_acc','virus':'sseqid_virus'})
-        matches.to_csv('matches_merged.csv',index=False)
+            .rename(columns={'genome_length':'sseqid_genome_length'}) 
         pb.update(task_id=t1, advance=50)
     return matches
 
@@ -115,13 +113,10 @@ def calc_dist(df):
         pb.update(task_id=t1, advance=34)
     return df_dist 
 
-# now i have distances 
-
 def to_phylip(df_dist):
     '''Converts distances to PHYLIP format.'''
     console = Console()
     console.print(f'{datetime.now()}: Converting distance matrix to PHYLIP format.')
-
     matrix = df_dist.pivot_table(columns='qseqid_ID', index='virus', values='distance').reset_index()
     matrix = matrix.set_index('virus')
     #matrix.to_csv('dist_matrix_phylim_raw.dist', header=True, index=True, sep =' ')
@@ -143,7 +138,6 @@ def to_phylip(df_dist):
         # insert extra index values as columns
         for idx in idx_missing:
             matrix[idx] = 1
-    matrix.to_csv('matrix_what_is_happening.csv',index=True, sep=' ')
     # matrix = matrix.set_index('sseqid_genome')
     #sort dataframe by index and column values
     print(matrix.head())
