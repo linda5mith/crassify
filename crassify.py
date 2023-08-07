@@ -1,14 +1,14 @@
 from Bio import SeqIO
 import pandas as pd
 import numpy as np
+import os
+import re
 import argparse
 import subprocess
 from io import StringIO
-from tqdm import tqdm
-import os
-import re
+from rich.console import Console
+from rich.progress import track, Progress
 from datetime import datetime
-pd.set_option('display.max_columns', None)
 
 def map_genome_to_proteome(path_to_prots):
     '''Takes a folder of protein fasta files as input, 
@@ -16,10 +16,11 @@ def map_genome_to_proteome(path_to_prots):
     if os.path.isdir(path_to_prots):
         prots = list_files(path_to_prots)
         if prots:
-            print(f'{datetime.now()}: Mapping genome ID to protein ID\'s.')
+            console = Console()
+            console.log('Mapping genome ID to protein ID\'s.', style="bold green")
             proteins={}
             genome_lens={}
-            for seq in tqdm(prots):
+            for seq in track(prots, description='Parsing proteins...'):
                 nt_ID = get_basename(seq)
                 records = list(SeqIO.parse(seq,'fasta'))
                 record_lens = [len(record.seq) for record in records]
@@ -41,25 +42,26 @@ def map_genome_to_proteome(path_to_prots):
                 .reset_index(drop = True)
             return melt
     else:
-        print(f'{path_to_prots} is empty or does not contain fasta files.\nCheck -p path/to/proteins.')
+        console.print(f'{path_to_prots} is empty or does not contain fasta files.\nCheck -p path/to/proteins.', style="bold underline red")
 
 def merge_metadata_matches(matches, input_metadata, db_metadata):
     '''Merges protein metadata with diamond output matches.tsv'''
-    print(f'{datetime.now()}: Merging metadata with matches.tsv protein alignments.')
-    pbar = tqdm(total=100)
-    matches = pd.read_csv(matches, sep='\t', header=None, low_memory=False)
-    matches.columns = ['qseqid','sseqid', "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
-    matches = matches.merge(input_metadata, left_on=['qseqid'], right_on=['value']) \
-        .rename(columns={'genome_length':'qseqid_genome_length','ID':'qseqid_ID'}) \
-        .drop('value', axis=1)
-    pbar.update(45)
-    db_metadata = pd.read_csv(db_metadata, low_memory=False)
-    matches = matches.merge(db_metadata, left_on=['sseqid'], right_on=['protein_ncbi_acc'], how='left') \
-        .rename(columns={'genome_length':'sseqid_genome_length'}) #,'protein_ncbi_acc':'sseqid_protein_acc'})
-        #''genome_ncbi_acc':'sseqid_genome_acc','virus':'sseqid_virus'})
-    matches.to_csv('matches_merged.csv',index=False)
-    pbar.update(45)
-    pbar.update(10)
+    console = Console()
+    console.log('Merging metadata with matches.tsv protein alignments.',style="bold green")
+    with Progress() as pb:
+        t1 = pb.add_task(description='Merging...', total=100)
+        matches = pd.read_csv(matches, sep='\t', header=None, low_memory=False)
+        matches.columns = ['qseqid','sseqid', "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
+        matches = matches.merge(input_metadata, left_on=['qseqid'], right_on=['value']) \
+            .rename(columns={'genome_length':'qseqid_genome_length','ID':'qseqid_ID'}) \
+            .drop('value', axis=1)
+        pb.update(task_id=t1, advance=50)
+        db_metadata = pd.read_csv(db_metadata, low_memory=False)
+        matches = matches.merge(db_metadata, left_on=['sseqid'], right_on=['protein_ncbi_acc'], how='left') \
+            .rename(columns={'genome_length':'sseqid_genome_length'}) #,'protein_ncbi_acc':'sseqid_protein_acc'})
+            #''genome_ncbi_acc':'sseqid_genome_acc','virus':'sseqid_virus'})
+        matches.to_csv('matches_merged.csv',index=False)
+        pb.update(task_id=t1, advance=50)
     return matches
 
 def calc_dist(df):
@@ -67,55 +69,59 @@ def calc_dist(df):
     Finds top 5 highest taxonomic matches based on summation of conserved AA's.
     Returns distance matrix based on formula 1-(ORFs_A)+(ORFs_B)/(len(Genome_A+Genome_B)/2)
     '''
-    print(f'{datetime.now()}: Calculating distances between genomes.')
+    console = Console()
+    console.log('Calculating distances between genomes.',style="bold green")
     now = datetime.now()
-    dt_string = now.strftime("%d.%m.%Y_%H:%M:%S")
+    dt_string = now.strftime("%d.%m.%Y_%H:%M")
     outpath = f'./crassify_{dt_string}'
-    pbar = tqdm(total=100)
     try:
         os.mkdir(outpath)
     except Exception as e:
         print(e)
-    df['conserved_AA_#'] = (df['length']/100)*df['pident']
-    # taxonomy for each protein hit
-    df_proteins = df.sort_values(by=['qseqid','sseqid','sstart','send']) \
-        .loc[df.reset_index().groupby(['qseqid'])['conserved_AA_#'].idxmax()] \
-        .sort_values(by=['qseqid','conserved_AA_#','virus']) \
-        .reset_index(drop=True) \
-        .to_csv(f'{outpath}/protein_hits.csv',index=False)
-    # return top 5 genome hits 
-    df_genome_hits = df.groupby(['qseqid_ID','genome_ncbi_acc','virus'])[['conserved_AA_#','length']].sum().reset_index() \
-        .sort_values(by=['conserved_AA_#'], ascending=False) \
-        .groupby('qseqid_ID').head(5).reset_index(drop=True) \
-        .merge(df, left_on=['genome_ncbi_acc'], right_on=['genome_ncbi_acc'], how='left', suffixes=('', '_y')) \
-        .drop_duplicates(keep='first').reset_index(drop=True) \
-        .groupby(['qseqid_ID','genome_ncbi_acc'])[['definition','qseqid','sseqid','conserved_AA_#_y','pident','length_y']].agg(lambda x: list(x)).reset_index() \
-        .merge(df, left_on=['genome_ncbi_acc'], right_on=['genome_ncbi_acc'], how='left', suffixes=('', '_y')) \
-        .drop_duplicates(subset=['qseqid_ID','genome_ncbi_acc'], keep='first').reset_index(drop=True)
-    df_genome_hits = df_genome_hits.drop(df_genome_hits.filter(regex='_y$').columns, axis=1) \
-        .drop('conserved_AA_#', axis=1) \
-        .to_csv(f'{outpath}/genome_hits.csv',index=False)
-    pbar.update(50)
-    # calculate distances 
-    df_dist = df.groupby(['qseqid_ID','genome_ncbi_acc']).agg({'conserved_AA_#':'sum', 
-                                'qseqid_genome_length':'first',
-                                'sseqid_genome_length':'first',
-                                'virus':'first',
-                                'length':'sum'}).reset_index()
-    df_dist['distance'] = 1-(df_dist['conserved_AA_#']*3)/((df_dist['qseqid_genome_length']+df_dist['sseqid_genome_length'])/2)
-    df_dist = df_dist.sort_values(by=['qseqid_ID','distance']) \
-        .reset_index(drop=True) \
-        .round(6) \
-        .to_csv(f'{outpath}/dists.csv',index=False)
-    pbar.update(50)
+    with Progress() as pb:
+        t1 = pb.add_task('Finding hits...', total=100)
+        df['conserved_AA_#'] = (df['length']/100)*df['pident']
+        # taxonomy for each protein hit
+        df_proteins = df.sort_values(by=['qseqid','sseqid','sstart','send']) \
+            .loc[df.reset_index().groupby(['qseqid'])['conserved_AA_#'].idxmax()] \
+            .sort_values(by=['qseqid','conserved_AA_#']) \
+            .reset_index(drop=True) \
+            .to_csv(f'{outpath}/protein_hits.csv',index=False)
+        pb.update(task_id=t1, advance=33.33)
+        # return top 5 genome hits 
+        df_genome_hits = df.groupby(['qseqid_ID','genome_ncbi_acc','virus'])[['conserved_AA_#','length']].sum().reset_index() \
+            .sort_values(by=['conserved_AA_#'], ascending=False) \
+            .groupby('qseqid_ID').head(5).reset_index(drop=True) \
+            .merge(df, left_on=['genome_ncbi_acc'], right_on=['genome_ncbi_acc'], how='left', suffixes=('', '_y')) \
+            .drop_duplicates(keep='first').reset_index(drop=True) \
+            .groupby(['qseqid_ID','genome_ncbi_acc'])[['definition','qseqid','sseqid','conserved_AA_#_y','pident','length_y']].agg(lambda x: list(x)).reset_index() \
+            .merge(df, left_on=['genome_ncbi_acc'], right_on=['genome_ncbi_acc'], how='left', suffixes=('', '_y')) \
+            .drop_duplicates(subset=['qseqid_ID','genome_ncbi_acc'], keep='first').reset_index(drop=True)
+        df_genome_hits = df_genome_hits.drop(df_genome_hits.filter(regex='_y$').columns, axis=1) \
+            .drop('conserved_AA_#', axis=1) \
+            .to_csv(f'{outpath}/genome_hits.csv',index=False)
+        pb.update(task_id=t1, advance=33.33)
+        # calculate distances 
+        df_dist = df.groupby(['qseqid_ID','genome_ncbi_acc']).agg({'conserved_AA_#':'sum', 
+                                    'qseqid_genome_length':'first',
+                                    'sseqid_genome_length':'first',
+                                    'virus':'first',
+                                    'length':'sum'}).reset_index()
+        df_dist['distance'] = 1-(df_dist['conserved_AA_#']*3)/((df_dist['qseqid_genome_length']+df_dist['sseqid_genome_length'])/2)
+        df_dist = df_dist.sort_values(by=['qseqid_ID','distance']) \
+            .reset_index(drop=True) \
+            .round(6) \
+            .to_csv(f'{outpath}/dists.csv',index=False)
+        pb.update(task_id=t1, advance=34)
     return df_dist 
 
 # now i have distances 
 
 def to_phylip(df_dist):
     '''Converts distances to PHYLIP format.'''
-    print(f'{datetime.now()}: Converting distance matrix to PHYLIP format.')
-    pbar = tqdm(total=100)
+    console = Console()
+    console.print(f'{datetime.now()}: Converting distance matrix to PHYLIP format.')
+
     matrix = df_dist.pivot_table(columns='qseqid_ID', index='virus', values='distance').reset_index()
     matrix = matrix.set_index('virus')
     #matrix.to_csv('dist_matrix_phylim_raw.dist', header=True, index=True, sep =' ')
@@ -156,7 +162,7 @@ def to_phylip(df_dist):
         .round(5) \
         .clip(lower = 0)
     matrix.to_csv('./crassify_output/dist_matrix_phylip.dist', header=True, index=True, sep =' ')
-    pbar.update(50)
+
     return matrix
 
 def to_newick(phylip_matrix, path_to_decenttree):
