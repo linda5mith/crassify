@@ -5,6 +5,7 @@ Pipeline to taxonomically classify microbiome viruses in metagenomic data based 
 Diamond input: your translated, unknown viral proteins
 Diamond blastp your reference proteins against ICTV reference DB
 For symmetrical best hit approach use --query-cover 50 --subject-cover 50 parameters else run with as recommended below:
+
 ```diamond blastp --query proteins.faa --db databases/ictv_reference.dmnd -o matches.tsv --ultra-sensitive --no-self-hits --evalue 0.00001```
 
 ## 2. Installing crassify
