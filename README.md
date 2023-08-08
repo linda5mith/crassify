@@ -19,7 +19,8 @@ Set path to crassify installation
 ```PATH=$PATH:/home/user/programs/crassify```
 
 ## 3. Running crassify
-Sample folders with example inputs are located:
+Sample folders with test inputs are provided in /proteomes and /diamond_hits/matches.tsv but will be replaced with the path to your proteomes and the matches.tsv file generated from step 1.
+
 ```python crassify.py -p /proteomes -m /diamond_hits/matches.tsv -db /metadata/ICTV_metadata.csv```
 
 ## 4. Crassify output
