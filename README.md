@@ -10,7 +10,9 @@ For symmetrical best hit approach use --query-cover 50 --subject-cover 50 parame
 ## 2. Installing crassify
 Install dependencies using environment.yml file:
 ```conda env create -f environment.yml```
+
 ```conda activate crassify```
+
 ```git clone https://github.com/linda5mith/crassify.git```
 
 Set path to crassify installation
@@ -18,7 +20,7 @@ Set path to crassify installation
 
 ## 3. Running crassify
 Sample folders with example inputs are located:
-python crassify.py -p /proteomes -m /diamond_hits/matches.tsv -db /metadata/ICTV_metadata.csv
+```python crassify.py -p /proteomes -m /diamond_hits/matches.tsv -db /metadata/ICTV_metadata.csv```
 
 ## 4. Crassify output
 protein_hits.csv - returns most homologous ICTV viral protein hit for each of your viral proteins that aligned to reference database.
