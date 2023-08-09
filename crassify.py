@@ -17,7 +17,7 @@ def map_genome_to_proteome(path_to_prots):
         prots = list_files(path_to_prots)
         if prots:
             console = Console()
-            console.log('Mapping genome ID to protein ID\'s.', style="bold purple")
+            console.log('Mapping genome ID to protein ID\'s.', style="bold blue")
             proteins={}
             genome_lens={}
             for seq in track(prots, description='Parsing proteins...'):
@@ -31,9 +31,9 @@ def map_genome_to_proteome(path_to_prots):
             genome_protein_map = pd.DataFrame.from_dict(proteins, orient='index')
             genome_lens = pd.DataFrame.from_dict(genome_lens, orient='index')
             genome_lens.columns = ['genome_length']
-            protein_metadata = pd.merge(genome_protein_map, genome_lens, left_index=True, right_index=True)
-            protein_metadata = protein_metadata.reset_index()
-            protein_metadata = protein_metadata.rename(columns={'index': 'ID'})
+            protein_metadata = pd.merge(genome_protein_map, genome_lens, left_index=True, right_index=True) \
+                .reset_index() \
+                .rename(columns={'index': 'ID'})
             # Transpose df to have columns ncbi_acc, prot_acc, genome_length
             melt = pd.melt(protein_metadata, id_vars=['ID','genome_length'])
             melt = melt[melt.value.notna()]
@@ -46,8 +46,13 @@ def map_genome_to_proteome(path_to_prots):
 
 def merge_metadata_matches(matches, input_metadata, db_metadata):
     '''Merges protein metadata with diamond output matches.tsv'''
+    now = datetime.now()
+    dt_string = now.strftime("%d.%m.%Y_%H:%M")
+    global outpath 
+    outpath = f'./crassify_{dt_string}'
+    os.mkdir(outpath)
     console = Console()
-    console.log('Merging metadata with matches.tsv protein alignments.',style="bold purple")
+    console.log('Merging metadata with matches.tsv protein alignments.',style="bold blue")
     with Progress() as pb:
         t1 = pb.add_task(description='Merging...', total=100)
         matches = pd.read_csv(matches, sep='\t', header=None, low_memory=False)
@@ -59,6 +64,16 @@ def merge_metadata_matches(matches, input_metadata, db_metadata):
         db_metadata = pd.read_csv(db_metadata, low_memory=False)
         matches = matches.merge(db_metadata, left_on=['sseqid'], right_on=['protein_ncbi_acc'], how='left') \
             .rename(columns={'genome_length':'sseqid_genome_length'}) 
+        # create tab-sep metadata file for empress
+        db_metadata = db_metadata.drop(['protein_ncbi_acc','definition','protein_length','virus'], axis=1)
+        empress_metadata = db_metadata.drop_duplicates(subset=['genome_ncbi_acc'], keep='first') \
+            .rename(columns={'genome_ncbi_acc':'genome_ID'})
+        empress_metadata['classified'] = 1
+        to_append = {'genome_ID': list(set(matches['qseqid_ID']))}
+        empress_metadata = pd.concat([empress_metadata, pd.DataFrame(to_append)])
+        empress_metadata['classified'] = empress_metadata['classified'].fillna(0)
+        empress_metadata = empress_metadata.reset_index(drop=True) \
+            .to_csv(f'{outpath}/feature_metadata.tsv', sep='\t', index=False) 
         pb.update(task_id=t1, advance=50)
     return matches
 
@@ -68,12 +83,8 @@ def calc_dist(df):
     Returns distance matrix based on formula 1-(ORFs_A)+(ORFs_B)/(len(Genome_A+Genome_B)/2)
     '''
     console = Console()
-    console.log('Calculating distances between genomes.',style="bold purple")
-    now = datetime.now()
-    dt_string = now.strftime("%d.%m.%Y_%H:%M")
-    outpath = f'./crassify_{dt_string}'
+    console.log('Calculating distances between genomes.',style="bold blue")
     try:
-        os.mkdir(outpath)
         with Progress() as pb:
             t1 = pb.add_task('Finding hits...', total=100)
             df['conserved_AA_#'] = (df['length']/100)*df['pident']
@@ -116,10 +127,9 @@ def calc_dist(df):
 def to_phylip(df_dist, ictv_dists):
     '''Converts distances to PHYLIP format.'''
     console = Console()
-    console.log('Converting distance matrix to PHYLIP format.',style="bold purple")
+    console.log('Converting distance matrix to PHYLIP format.',style="bold blue")
     with Progress() as pb:
         t1 = pb.add_task('Making matrix...', total=100)
-        outpath = df_dist.split('/')[0]
         df_dist = pd.read_csv(df_dist)
         ictv_dists = pd.read_csv(ictv_dists)
         df_dist = df_dist.rename(columns={'virus':'sseqid_virus','genome_ncbi_acc':'sseqid_genome_ncbi_acc'})
@@ -159,7 +169,7 @@ def to_phylip(df_dist, ictv_dists):
         pb.update(task_id=t1, advance=25)
     return matrix
 
-def to_newick(phylip_matrix, path_to_decenttree):
+def to_newick(phylip_matrix, outpath):
     print(f'{datetime.now()}: Calling DecentTree to convert PHYLIP to Newick format.')
     # ./decenttree -in /data/san/data1/users/linda/crAss_DB/ictv_proposal_seq_translations/dist_matrix_phylim.dist -t NJ -nt 10 -out dist_matrix_NJ.newick
     p = subprocess.call([path_to_decenttree, "-in", phylip_matrix])
@@ -190,7 +200,6 @@ def get_basename(path_to_file):
     filepath = os.path.splitext(path_to_file)
     base = filepath[0].split('/')[-1]
     return base
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
