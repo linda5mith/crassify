@@ -1,0 +1,4 @@
+The flag 'directory' used in rule all is only valid for outputs, not inputs.
+KeyError in file /home/administrator/phd/crassify_v2/Snakefile, line 66:
+'metadata'
+  File "/home/administrator/phd/crassify_v2/Snakefile", line 66, in <module>

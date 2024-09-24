@@ -1,0 +1,20 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - snakemake-minimal >=7.3
+  - diamond==2.1.8
+  - conda-forge::python=3.10
+  - conda-forge::pip
+  - scikit-bio==0.5.8
+  - scipy==1.10.1
+  - numpy==1.24.3
+  - pandas==2.0.1
+  - biopython==1.81
+  - prodigal
+  - pip:
+    - empress==1.2.0
+    - rich==13.5.2
+    - openpyxl
+
+# need to add tqdm

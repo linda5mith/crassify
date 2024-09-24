@@ -1,0 +1,62 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job stats:
+job                   count
+------------------  -------
+all                       1
+crassify                  1
+decenttree                1
+dendogram                 1
+run_diamond_blastp        1
+total                     5
+
+Select jobs to execute...
+
+[Tue Sep 24 11:27:08 2024]
+rule run_diamond_blastp:
+    input: /home/administrator/phd/crassify_v2/sample_data/known_phage_seqs.faa, database/CRASSIFY_DB.dmnd
+    output: /home/administrator/phd/crassify_out/diamond_db/matches.tsv
+    jobid: 1
+    reason: Set of input files has changed since last execution
+    resources: tmpdir=/tmp
+
+[Tue Sep 24 11:27:31 2024]
+Finished job 1.
+1 of 5 steps (20%) done
+Select jobs to execute...
+
+[Tue Sep 24 11:27:31 2024]
+rule crassify:
+    input: /home/administrator/phd/crassify_out/diamond_db/matches.tsv, /home/administrator/phd/crassify_out/diamond_db/query_proteomes.faa, database/CRASSIFY_DB.dmnd, /home/administrator/phd/ICTV_DB/DB_2024/ICTV_metadata.csv
+    output: /home/administrator/phd/crassify_out/feature_metadata.tsv, /home/administrator/phd/crassify_out/phylip.dist
+    jobid: 3
+    reason: Missing output files: /home/administrator/phd/crassify_out/feature_metadata.tsv, /home/administrator/phd/crassify_out/phylip.dist; Input files updated by another job: /home/administrator/phd/crassify_out/diamond_db/matches.tsv
+    resources: tmpdir=/tmp
+
+[Tue Sep 24 11:27:35 2024]
+Finished job 3.
+2 of 5 steps (40%) done
+Select jobs to execute...
+
+[Tue Sep 24 11:27:35 2024]
+rule decenttree:
+    input: /home/administrator/phd/crassify_out/phylip.dist
+    output: /home/administrator/phd/crassify_out/dist_matrix_NJ.nwk
+    jobid: 2
+    reason: Missing output files: /home/administrator/phd/crassify_out/dist_matrix_NJ.nwk; Input files updated by another job: /home/administrator/phd/crassify_out/phylip.dist
+    resources: tmpdir=/tmp
+
+[Tue Sep 24 11:27:35 2024]
+Error in rule decenttree:
+    jobid: 2
+    input: /home/administrator/phd/crassify_out/phylip.dist
+    output: /home/administrator/phd/crassify_out/dist_matrix_NJ.nwk
+    shell:
+        /home/administrator/programs/decenttree/build/decenttree -in /home/administrator/phd/crassify_out/phylip.dist -t NJ -nt 10 -out /home/administrator/phd/crassify_out/dist_matrix_NJ.nwk
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: .snakemake/log/2024-09-24T112708.181193.snakemake.log

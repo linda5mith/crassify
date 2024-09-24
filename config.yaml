@@ -1,0 +1,19 @@
+# config.yaml
+
+# Specify path to DB
+DB: "/home/administrator/phd/ICTV_DB/DB_2024/CRASSIFY_DB.dmnd"
+
+# Specify path to your input file
+input_files:
+  - path: "/home/administrator/phd/crassify_v2/sample_data/known_phage_seqs.faa" #"/home/administrator/phd/soil_2024/L001_L002_L003_L004_contigs/combined_contigs.fa"
+    type: "protein"  # or "protein"
+
+# Specify path to your target DB proteome metadata (default is crassify metadata)
+metadata: "/home/administrator/phd/ICTV_DB/DB_2024/ICTV_metadata.csv"
+
+output_directory: "/home/administrator/phd"
+
+# Path to decenttree installation
+decenttree: "/home/administrator/programs/decenttree/build/decenttree"
+
+

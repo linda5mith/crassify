@@ -1,0 +1,63 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job stats:
+job                     count
+--------------------  -------
+all                         1
+crassify                    1
+run_diamond_blastp          1
+translate_metagenome        1
+total                       4
+
+Select jobs to execute...
+
+[Wed Aug 28 19:57:27 2024]
+rule translate_metagenome:
+    input: /home/administrator/phd/crassify_v2/sample_data/phage_nucleotide_seqs.fasta
+    output: /home/administrator/phd/crassify_out/diamond_db/query_proteomes.faa
+    jobid: 3
+    reason: Missing output files: /home/administrator/phd/crassify_out/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+[Wed Aug 28 19:57:47 2024]
+Finished job 3.
+1 of 4 steps (25%) done
+Select jobs to execute...
+
+[Wed Aug 28 19:57:47 2024]
+rule run_diamond_blastp:
+    input: /home/administrator/phd/crassify_out/diamond_db/query_proteomes.faa, /home/administrator/phd/ICTV_DB/DB_2024/CRASSIFY_DB.dmnd
+    output: /home/administrator/phd/crassify_out/diamond_db/matches.tsv
+    jobid: 2
+    reason: Missing output files: /home/administrator/phd/crassify_out/diamond_db/matches.tsv; Input files updated by another job: /home/administrator/phd/crassify_out/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+[Wed Aug 28 19:58:41 2024]
+Finished job 2.
+2 of 4 steps (50%) done
+Select jobs to execute...
+
+[Wed Aug 28 19:58:41 2024]
+rule crassify:
+    input: /home/administrator/phd/crassify_out/diamond_db/matches.tsv, /home/administrator/phd/crassify_out/diamond_db/query_proteomes.faa, /home/administrator/phd/ICTV_DB/DB_2024/CRASSIFY_DB.dmnd, /home/administrator/phd/ICTV_DB/DB_2024/ICTV_metadata_final.csv
+    output: /home/administrator/phd/crassify_out/empress_metadata.tsv, /home/administrator/phd/crassify_out/phylip.dist
+    jobid: 1
+    reason: Missing output files: /home/administrator/phd/crassify_out/empress_metadata.tsv, /home/administrator/phd/crassify_out/phylip.dist; Input files updated by another job: /home/administrator/phd/crassify_out/diamond_db/query_proteomes.faa, /home/administrator/phd/crassify_out/diamond_db/matches.tsv
+    resources: tmpdir=/tmp
+
+[Wed Aug 28 19:58:42 2024]
+Error in rule crassify:
+    jobid: 1
+    input: /home/administrator/phd/crassify_out/diamond_db/matches.tsv, /home/administrator/phd/crassify_out/diamond_db/query_proteomes.faa, /home/administrator/phd/ICTV_DB/DB_2024/CRASSIFY_DB.dmnd, /home/administrator/phd/ICTV_DB/DB_2024/ICTV_metadata_final.csv
+    output: /home/administrator/phd/crassify_out/empress_metadata.tsv, /home/administrator/phd/crassify_out/phylip.dist
+    shell:
+        
+        python crassify.py         -p /home/administrator/phd/crassify_out/diamond_db/query_proteomes.faa         -m /home/administrator/phd/crassify_out/diamond_db/matches.tsv         --metadata /home/administrator/phd/ICTV_DB/DB_2024/ICTV_metadata_final.csv         --config-file config.yaml         -o /home/administrator/phd/crassify_out/phylip.dist         -q /home/administrator/phd/crassify_out/empress_metadata.tsv
+        
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: .snakemake/log/2024-08-28T195726.797346.snakemake.log
