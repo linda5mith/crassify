@@ -152,7 +152,6 @@ class MetadataMerger:
         self.metadata = pd.concat([self.generated_metadata, input_metadata], ignore_index=True)
         self.metadata = self.metadata.drop_duplicates(subset=['protein_ID'], keep='first')
         self.metadata['input_seq'] = self.metadata['input_seq'].fillna(0)
-        self.metadata.to_csv('METADATA_WHATS_GOING_ON.csv',index=False)
 
     def merge_metadata_matches(self):
         '''Merges protein metadata with DIAMOND output matches.tsv'''
