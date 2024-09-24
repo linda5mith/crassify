@@ -91,7 +91,7 @@ rule crassify:
     shell:
         """
         python crassify.py \
-        -p {input.translated_proteomes} \
+        -p {input.input_proteins} \
         -m {input.matches} \
         --metadata {DB_metadata} \
         -o {output_dir}

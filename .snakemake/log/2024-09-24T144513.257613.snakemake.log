@@ -1,0 +1,65 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job stats:
+job           count
+----------  -------
+all               1
+crassify          1
+decenttree        1
+dendogram         1
+total             4
+
+Select jobs to execute...
+
+[Tue Sep 24 14:45:13 2024]
+rule crassify:
+    input: /home/administrator/phd/crassify_out/diamond_db/matches.tsv, /home/administrator/phd/crassify_v2/sample_data/known_phage_seqs.faa, database/CRASSIFY_DB.dmnd, /home/administrator/phd/ICTV_DB/DB_2024/ICTV_metadata.csv
+    output: /home/administrator/phd/crassify_out/feature_metadata.tsv, /home/administrator/phd/crassify_out/phylip.dist
+    jobid: 3
+    reason: Missing output files: /home/administrator/phd/crassify_out/feature_metadata.tsv, /home/administrator/phd/crassify_out/phylip.dist; Set of input files has changed since last execution; Code has changed since last execution
+    resources: tmpdir=/tmp
+
+[Tue Sep 24 14:45:17 2024]
+Finished job 3.
+1 of 4 steps (25%) done
+Select jobs to execute...
+
+[Tue Sep 24 14:45:17 2024]
+rule decenttree:
+    input: /home/administrator/phd/crassify_out/phylip.dist
+    output: /home/administrator/phd/crassify_out/dist_matrix_NJ.nwk
+    jobid: 2
+    reason: Missing output files: /home/administrator/phd/crassify_out/dist_matrix_NJ.nwk; Input files updated by another job: /home/administrator/phd/crassify_out/phylip.dist
+    resources: tmpdir=/tmp
+
+[Tue Sep 24 14:45:17 2024]
+Finished job 2.
+2 of 4 steps (50%) done
+Select jobs to execute...
+
+[Tue Sep 24 14:45:17 2024]
+rule dendogram:
+    input: /home/administrator/phd/crassify_out/dist_matrix_NJ.nwk, /home/administrator/phd/crassify_out/feature_metadata.tsv
+    output: /home/administrator/phd/crassify_out/bioempress/tree-viz
+    jobid: 4
+    reason: Missing output files: /home/administrator/phd/crassify_out/bioempress/tree-viz; Input files updated by another job: /home/administrator/phd/crassify_out/feature_metadata.tsv, /home/administrator/phd/crassify_out/dist_matrix_NJ.nwk
+    resources: tmpdir=/tmp
+
+[Tue Sep 24 14:45:19 2024]
+Finished job 4.
+3 of 4 steps (75%) done
+Select jobs to execute...
+
+[Tue Sep 24 14:45:19 2024]
+localrule all:
+    input: /home/administrator/phd/crassify_v2/sample_data/known_phage_seqs.faa, /home/administrator/phd/crassify_out/diamond_db/matches.tsv, /home/administrator/phd/crassify_out/dist_matrix_NJ.nwk, /home/administrator/phd/crassify_out/bioempress/tree-viz
+    jobid: 0
+    reason: Input files updated by another job: /home/administrator/phd/crassify_out/bioempress/tree-viz, /home/administrator/phd/crassify_out/dist_matrix_NJ.nwk
+    resources: tmpdir=/tmp
+
+[Tue Sep 24 14:45:19 2024]
+Finished job 0.
+4 of 4 steps (100%) done
+Complete log: .snakemake/log/2024-09-24T144513.257613.snakemake.log
