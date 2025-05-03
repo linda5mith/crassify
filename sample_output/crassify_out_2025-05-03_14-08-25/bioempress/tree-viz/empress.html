@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Empress</title>
+    <link rel='stylesheet' type="text/css" href='support_files/css/empress.css'>
+    <link rel='stylesheet' type="text/css" href='support_files/vendor/spectrum.min.css'>
+    <link rel='stylesheet' type="text/css" href='support_files/vendor/toastr.min.css'>
+    <script src='support_files/vendor/require-2.1.22.min.js'></script>
+    
+    
+  </head>
+  <body>
+
+  <div>
+    <!-- The tree -->
+    <div class="">
+      <div id="tree-container" class="container ">
+        <!-- loading screen -->
+        <div id="loading-screen">
+          <div id="loading-animation"></div>
+          <div id="loading-text">Loading...</div>
+        </div>
+
+        <canvas class="tree-surface" id="tree-surface">
+            Your browser does not support HTML5
+        </canvas>
+        <div id="tip-label-container"></div>
+        <div id="node-label-container"></div>
+        <div class="square"></div>
+
+        <!-- Side panel -->
+        <div id="side-panel" class="unselectable-text hidden">
+          <!-- The Header bar -->
+<div id="autocomplete-container">
+  <p class="side-header">
+    <!-- Attempt to stop the browser's autocomplete suggestions, since Empress
+         shows its own autocomplete menu (see #445 on GitHub)
+    -->
+    <input type="text" id="quick-search" placeholder="Search by node name..."
+           style="flex-grow: 1;" autocomplete="off" class="empress-input">
+    <button id="side-header-search-btn" style="flex-grow: 1;">Search</button>
+    <button id="hide-ctrl" title="Hide control panel"
+            style="font-size: 10pt; padding: 0 0 3px 3px;">&#9701;</button>
+  </p>
+</div>
+
+<!-- Sample Coloring Options -->
+<button id="smOpenButton" class="side-header collapsible needs-community-data">
+    Sample Metadata Coloring</button>
+<div class="side-content control hidden" id="sample-metadata-coloring-div">
+  <p class="side-panel-notes">
+    Color tips in the tree that are unique to certain groups of samples.
+    Internal nodes where all descendants are unique to a group are themselves
+    considered unique to that group.
+  </p>
+  <p>
+    <label for="sample-chk">Color by...</label>
+    <input id="sample-chk" type="checkbox" class="empress-input">
+    <label class="select-container">
+      <select id="sample-options"  disabled="true"></select>
+    </label>
+  </p>
+  <p class="hidden">
+    <div id="sample-add" class="hidden">
+      <p>
+        <label for="sample-color">Color Map</label>
+        <label class="select-container">
+          <select id="sample-color"></select>
+        </label>
+      </p>
+      <p>
+        <label for="sample-reverse-color-chk">Reverse Color Map</label>
+        <input id="sample-reverse-color-chk" type="checkbox" value="false"
+               class="empress-input">
+      </p>
+      <p>
+        <label for="sample-collapse-chk">Collapse Clades</label>
+        <input id="sample-collapse-chk" type="checkbox" value="false"
+               class="empress-input">
+      </p>
+      <p class="side-panel-notes indented">
+        If checked, collapse all clades whose members share the same sample
+        metadata value.
+      </p>
+      <p>
+        <label for="sample-line-width">Extra Line Width</label>
+        <input id="sample-line-width" type="number" value="0" min="0"
+               step="any" class="empress-input">
+      </p>
+      <p>
+        <button id="sample-update" class="hidden">Update</button>
+      </p>
+    </div>
+  </p>
+</div>
+
+<!-- Feature Metadata Coloring Options -->
+<button id="fmOpenButton" class="side-header collapsible needs-feature-metadata">
+    Feature Metadata Coloring</button>
+<div class="side-content control hidden" id="feature-metadata-coloring-div">
+  <p class="side-panel-notes">
+    Color nodes in the tree based on feature metadata: for example,
+    taxonomic annotations.
+  </p>
+  <p>
+    <label for="feature-chk">Color by...</label>
+    <input id="feature-chk" type="checkbox" class="empress-input">
+    <label class="select-container">
+      <select id="feature-options"  disabled="true"></select>
+    </label>
+  </p>
+  <p class="hidden">
+    <div id="feature-add" class="hidden">
+      <p>
+        <label for="feature-color">Color Map</label>
+        <label class="select-container">
+          <select id="feature-color"></select>
+        </label>
+      </p>
+    <p>
+      <label for="feature-reverse-color-chk">Reverse Color Map</label>
+      <input id="feature-reverse-color-chk" type="checkbox" value="false"
+             class="empress-input">
+    </p>
+      <p>
+        <label for="feature-collapse-chk">Collapse Clades</label>
+        <input id="feature-collapse-chk" type="checkbox" value="false"
+               class="empress-input">
+      </p>
+      <p class="side-panel-notes indented">
+        If checked, collapse all clades whose members share the same feature
+        metadata value.
+      </p>
+      <p>
+        <label for="feature-line-width">Extra Line Width</label>
+        <input id="feature-line-width" type="number" value="0" min="0"
+               step="any" class="empress-input">
+      </p>
+      <p>
+        <label for="fm-method-chk">Only use tip-level metadata?</label>
+        <input id="fm-method-chk" type="checkbox" checked="true"
+               class="empress-input">
+        <!-- We'll fill this in when the feature metadata tab is opened,
+             and we'll update it when fm-method-chk is updated.
+        -->
+        <p class="side-panel-notes indented" id="fm-method-desc">
+        </p>
+      </p>
+      <p>
+        <button id="feature-update" class="hidden">Update</button>
+      </p>
+    </div>
+  </p>
+</div>
+
+<!-- Layout methods and options; shamelessly copied from above. -->
+<button class="side-header collapsible">Layout</button>
+<div class="side-content control hidden">
+  <p class="side-panel-notes">
+    Change how the tree is drawn.
+  </p>
+  <!-- Layout methods (e.g. Rectangular, Circular, Unrooted) will be added to
+       this <div> when SidePanel.addLayoutTab() is called.
+  -->
+  <div id="layout-method-container">
+  </div>
+  <hr />
+  <p class="side-panel-inner-header">
+    Branch lengths
+  </p>
+  <div id="branch-length-warning">
+    <p class="side-panel-notes">
+      Warning: the "Ignore branch lengths" and "Make ultrametric" options display
+      modified branch lengths that can be useful for aesthetics. The resulting
+      trees should not be interpreted with respect to their branch lengths.
+    </p>
+  </div>
+  <div id="branch-length-method-container">
+    <p>
+      <label for="normal-lengths-chk">Normal</label>
+      <input type="radio" id="normal-lengths-chk" name="branches-radio" value="normal"
+             class="empress-input" checked="true">
+    </p>
+    <p class="side-panel-notes indented">
+      The branch lengths shown correspond to the branch lengths in the original tree.
+    </p>
+    <p>
+      <label for="ignore-lengths-chk">Ignore branch lengths</label>
+      <input type="radio" id="ignore-lengths-chk" name="branches-radio" value="ignore"
+             class="empress-input">
+    </p>
+    <p class="side-panel-notes indented">
+      If checked, all branches are drawn with the same length. Note that the
+      root node is never drawn with any length, regardless of if this
+      is checked or not.
+    </p>
+    <p>
+      <label for="make-ultrametric-chk">Make ultrametric</label>
+      <input type="radio" id="make-ultrametric-chk" name="branches-radio" value="ultrametric"
+             class="empress-input">
+    </p>
+    <p class="side-panel-notes indented">
+      If checked, branch lengths will be adjusted so that the root-to-tip distance
+      is the same for all tips.
+    </p>
+  </div>
+  <div id="leaf-sorting-container">
+    <hr />
+    <p class="side-panel-inner-header">
+      Clade sorting
+    </p>
+    <p>
+      <label for="leaf-sorting-select">Sort clades based on tip count?</label>
+      <label class="select-container">
+        <select id="leaf-sorting-select">
+          <option value="none">No sorting</option>
+          <option value="ascending">Sort (ascending)</option>
+          <option value="descending" selected>Sort (descending)</option>
+        </select>
+      </label>
+    </p>
+    <p class="side-panel-notes indented" id="leaf-sorting-desc">
+    </p>
+  </div>
+</div>
+
+<!-- Barplot options -->
+<button id="barplotOpenButton" class="side-header collapsible needs-metadata">
+    Barplots</button>
+<div class="side-content control hidden" id="barplot-div">
+  <p class="side-panel-notes">
+    Annotate tips by metadata.
+  </p>
+  <!-- Depending on the current layout, one of the below divs
+      (#barplot-available-content or #barplot-unavailable-content) will be
+      visible (i.e. doesn't have the class "hidden"). We default to
+      barplot-unavailable-content being visible, since the default layout is
+      unrooted; however, the BarplotPanel object will figure things out on
+      initialization anyway.
+  -->
+  <div id="barplot-available-content" class="hidden">
+    <p>
+      <label for="barplot-chk">Draw barplots?</label>
+      <input id="barplot-chk" type="checkbox" class="empress-input">
+    </p>
+    <div id="barplot-layer-container" class="hidden">
+      <hr />
+    </div>
+    <div id="barplot-add-options" class="hidden">
+      <p>
+        <label for="barplot-add-btn">Add another layer</label>
+        <button id="barplot-add-btn">+</button>
+      </p>
+    </div>
+    <div id="barplot-border-content" class="hidden">
+      <p>
+        <label for="barplot-custom-gap">Distance between tree and barplots</label>
+        <input id="barplot-custom-gap" type="number" class="empress-input">
+      </p>
+      <p>
+        <label for="barplot-border-chk">Add a border around barplot layers?</label>
+        <input id="barplot-border-chk" type="checkbox" class="empress-input">
+      </p>
+      <div id="barplot-border-options" class="hidden">
+        <p>
+          <label for="barplot-border-color">Border color</label>
+          <!-- Will get turned into a Spectrum color picker by
+               BarplotPanelHandler
+          -->
+          <input id="barplot-border-color" type="text">
+        </p>
+        <p>
+          <label for="barplot-border-length">Length</label>
+          <!-- Minimum, default, etc will be applied by BarplotPanelHandler -->
+          <input id="barplot-border-length" type="number" class="empress-input">
+        </p>
+      </div>
+      <hr />
+    </div>
+    <p id="barplot-update-options" class="hidden">
+      <button id="barplot-update">Update</button>
+    </p>
+  </div>
+  <div id="barplot-unavailable-content">
+    <p class="side-panel-notes" style="font-weight: bold;">
+      Barplots are only supported in the rectangular and circular layouts.
+      Please change the layout in order to use barplots.
+    </p>
+  </div>
+</div>
+
+<!-- Shear options -->
+<button id="shearOpenButton" class="side-header collapsible needs-feature-metadata">
+    Shear Tree</button>
+<div class="side-content control hidden" id="shear-div">
+  <p class="side-panel-notes">
+     Shear the tree to tips with certain feature metadata values.
+  </p>
+  <p class="side-panel-notes">
+    <span style="font-weight: bold;">Warning:</span> By design, shearing
+    will change the topology of the tree: the resulting visualization may be
+    misleading, especially if shown without context.
+  </p>
+  <p class="side-panel-notes">
+    <span style="font-weight: bold;">Performance Note:</span> If shearing is
+    taking a long time for your dataset, you may want to try disabling tree
+    coloring and barplots before shearing.
+  </p>
+  <div id="shear-add-options">
+    <p>
+      <label for="shear-feature-select">Shear by...</label>
+      <label class="select-container">
+        <select id="shear-feature-select"></select>
+      </label>
+    </p>
+    <p>
+      <label for="shear-add-btn">Add shear filter</label>
+      <button id="shear-add-btn">+</button>
+    </p>
+  </div>
+  <div id="shear-layer-container">
+  </div>
+</div>
+
+<!-- animate Options -->
+<button id="animationOpenButton" class="side-header collapsible hidden">
+    Animation</button>
+<div class="side-content control hidden" id="animation-div">
+  <p class="side-panel-notes">
+    Color nodes in the tree that are unique to certain groups of samples
+    (specified by the trajectory) at different timepoints throughout a
+    gradient.
+  </p>
+  <p class="side-panel-notes">
+    <span style="font-weight: bold;">Warning: </span>
+    Certain tabs will be disabled while the animation is active.
+    To re-enable these tabs,
+    stop the animation by clicking on the "Stop Animation" button.
+  </p>
+  <p>
+    <label for="animate-color-select">Color Map</label>
+    <label class="select-container">
+      <select id="animate-color-select"></select>
+    </label>
+  </p>
+  <p>
+    <label for="animate-color-reverse-chk">Reverse Color Map</label>
+    <input id="animate-color-reverse-chk" type="checkbox" value="false"
+           class="empress-input">
+  </p>
+  <p>
+    <label for="animate-gradient">Gradient</label>
+    <label class="select-container">
+      <select id="animate-gradient"></select>
+    </label>
+  </p>
+  <p>
+    <label for="animate-trajectory">Trajectory</label>
+    <label class="select-container">
+      <select id="animate-trajectory"></select>
+    </label>
+  </p>
+  <p>
+    <label for="animate-collapse-chk">Collapse Clades</label>
+    <input id="animate-collapse-chk" type="checkbox" value="false"
+           class="empress-input">
+  </p>
+  <p class="side-panel-notes indented">
+    If checked, collapse all clades whose members share the same sample
+    metadata value.
+  </p>
+  <p>
+    <label for="animate-line-width">Extra Line Width</label>
+    <input id="animate-line-width" type="number" value="0" min="0"
+           step="any" class="empress-input">
+  </p>
+  <div>
+    <p>
+      <button id="animate-start-btn">Start</button>
+    </p>
+    <p>
+      <button id="animate-stop-btn">Stop Animation</button>
+    </p>
+    <p>
+      <button id="animate-pause-btn">Pause</button>
+    </p>
+    <div>
+      <p>
+        <button id="animate-resume-btn">Resume</button>
+        <button id="animate-prev-btn">Previous Frame</button>
+        <button id="animate-next-btn">Next Frame</button>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- options to export plot as images -->
+<button class="side-header collapsible">Export</button>
+<div class="side-content control hidden" id="export-div">
+  <p class="side-panel-notes">
+    Export images of the tree and its legends.
+    Note that PNG exports will change as the tree is zoomed and panned.
+  </p>
+  <!-- Applying the margin: 0 auto; style to the exterior <p> doesn't work;
+       the centering requires it be applied to each of the buttons
+  -->
+  <p>
+    <button style="margin: 0 auto;" id="export-tree-svg-btn">Export tree as SVG</button>
+    <button style="margin: 0 auto;" id="export-tree-png-btn">Export tree as PNG</button>
+  </p>
+  <div class="needs-metadata">
+    <p>
+      <button style="margin: 0 auto;" id="export-legend-svg-btn">Export legends as SVG</button>
+    </p>
+  </div>
+</div>
+
+<!-- Tree statistics -->
+<button class="side-header collapsible unpopulated" id="stats-btn">Tree Statistics</button>
+<div class="side-content control hidden">
+  <p class="side-panel-notes">
+    Information about the tree's topology.
+  </p>
+  <p>
+    <table style="margin: 0 auto;">
+      <tbody>
+        <!-- Lord, forgive me not for what I've done but what I'm about to do -->
+        <tr>
+          <td class="header-cell" style="text-align: center;" colspan="2">Node counts</td>
+          <!-- Add padding between the two horizontally separated "halves" of the
+               table. Based on alternate option listed at
+               https://stackoverflow.com/a/11801090/10730311.
+          -->
+          <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+          <td class="header-cell" style="text-align: center;" colspan="2">Node lengths</td>
+        </tr>
+        <tr>
+          <td class="header-cell">Tips</td>
+          <td id="stats-tip-count"></td>
+          <td></td>
+          <td class="header-cell">Minimum</td>
+          <td id="stats-min-length"></td>
+        </tr>
+        <tr>
+          <td class="header-cell">Internal nodes</td>
+          <td id="stats-int-count"></td>
+          <td></td>
+          <td class="header-cell">Maximum</td>
+          <td id="stats-max-length"></td>
+        </tr>
+        <tr>
+          <td class="header-cell">Total</td>
+          <td id="stats-total-count"></td>
+          <td></td>
+          <td class="header-cell">Average</td>
+          <td id="stats-avg-length"></td>
+        </tr>
+      </tbody>
+    </table>
+  </p>
+  <p class="side-panel-notes">
+    Please note that the root node's length, even
+    if specified, is not included in the node length statistics. Node length
+    statistics are rounded to four decimal places.
+  </p>
+  <p class="needs-feature-metadata side-panel-notes">
+    These statistics will be automatically updated as the tree is sheared
+    using the "Shear Tree" functionality. Note that, in the rare case when
+    the tree is sheared to only contain the root node, the root node will
+    be counted as a tip instead of an internal node.
+  </p>
+  <p class="needs-metadata side-panel-notes">
+    Note that these statistics only pertain to the tree shown here,
+    and don't account for modifications to the tree done before this
+    visualization. For example, if the
+    tree was sheared to a table using Empress' command-line interface
+    (this is the default behavior of the
+    <span style="font-family: monospace;">shear-to-table</span>
+    parameter of <span style="font-family: monospace;">community-plot</span>)
+    then the node counts shown here will only reflect the
+    resulting sheared tree.
+  </p>
+</div>
+
+<!-- Global settings -->
+<button class="side-header collapsible">Settings</button>
+<div class="side-content control hidden">
+  <p class="side-panel-inner-header">
+    Node circles
+  </p>
+  <p>
+    <label for="display-nodes-select">Show node circles?</label>
+    <label class="select-container">
+      <select id="display-nodes-select">
+        <option value=2>Hide all node circles</option>
+        <option value=3 selected>
+            Show node circles for internal nodes with only one child
+        </option>
+        <option value=0>Show internal node circles</option>
+        <option value=1>Show all node circles</option>
+        </option>
+      </select>
+    </label>
+  </p>
+  <p class="side-panel-notes indented">
+    Controls behavior of when to draw circles at nodes' positions.
+    Note that, in the rare case when the tree is sheared to only
+    contain the root node, a circle will nonetheless always be
+    drawn for it to serve as a visual marker (unless "Hide all node
+    circles" is selected).
+  </p>
+  <hr />
+  <p class="side-panel-inner-header">
+    Camera
+  </p>
+  <p>
+    <button id="center-tree-btn">Reset Camera</button>
+  </p>
+  <p class="side-panel-notes indented">
+    Repositions the camera at the center of the tree.
+  </p>
+  <p>
+    <label for="focus-on-node-chk">Focus on selected nodes?</label>
+    <input id="focus-on-node-chk" type="checkbox" checked="true"
+           class="empress-input">
+  </p>
+  <p class="side-panel-notes indented">
+    If checked, the camera will automatically focus on nodes that are selected
+    via searching by name or by clicking on an arrow in a biplot.
+  </p>
+  <div class="needs-metadata">
+    <hr />
+    <p class="side-panel-inner-header">
+      Clade collapsing method
+    </p>
+    <p>
+      <label for="normal">Normal</label>
+      <input type="radio" id="normal" name="collapse-radio" value="normal"
+             checked="true" class="empress-input">
+    </p>
+    <p class="side-panel-notes indented">
+      The shape of the collapsed clade will show both the depth and width of the
+      clade. This option applies to all layouts.
+    </p>
+    <p>
+      <label for="symmetric">Symmetric</label>
+      <input type="radio" id="symmetric" name="collapse-radio" value="symmetric"
+             class="empress-input">
+    </p>
+    <p class="side-panel-notes indented">
+      The shape of the collapsed clade will only show the depth of the clade but
+      the shape will be symmetric w.r.t. to the root of the clade. This option
+      only applies to the Rectangular and Circular layouts.
+    </p>
+  </div>
+  <div class="needs-community-data">
+    <hr />
+    <p class="side-panel-inner-header">
+      Tree coloring
+    </p>
+    <p>
+      <label for="absent-tip-chk">Ignore absent tips?</label>
+      <input id="absent-tip-chk" type="checkbox" checked="true"
+             class="empress-input">
+    </p>
+    <p class="side-panel-notes indented">
+      If checked, tips not represented in the current sample selection are
+      ignored when propagating the color of a clade. Applies to sample metadata
+      coloring, animations, and sample selections in Emperor. We recommend
+      changing this setting before starting an animation; otherwise, this
+      setting may only be partially applied throughout the animation.
+    </p>
+  </div>
+</div>
+        </div>
+
+        <!-- show control panel button -->
+        <button id="show-ctrl" title="Show control panel" class="hidden unselectable-text">&#9699;</button>
+
+      </div>
+    </div>
+
+    
+  </div>
+
+    <!-- node selection menu box -->
+    <div class="hidden" id="menu-box">
+      <h1 id="menu-box-node-id"></h1>
+      <p class="hidden" id="menu-box-node-name-warning"></p>
+      <div id="menu-box-node-length-container" class="hidden">
+        <strong>Node length:</strong>
+        <span id="menu-box-node-length"></span>
+      </div>
+      <!-- Feature metadata section -->
+      <div id="menu-fm-section">
+        <hr />
+        <h3 id="menu-fm-header">Feature Metadata</h3>
+        <p id="menu-fm-no-fm-note"></p>
+        <table class="menu-table" id="menu-fm-table"></table>
+      </div>
+      <!-- Sample metadata section -->
+      <div id="menu-sm-section">
+        <hr />
+        <h3 id="menu-sm-header">Sample Presence Information</h3>
+        <p id="menu-box-node-not-in-table-warning"></p>
+        <p id="menu-box-sm-notes"></p>
+        <table class="menu-table" id="menu-sm-table"></table>
+        <div id="menu-sm-add-section">
+          <strong>Select a metadata column to summarize</strong>
+          <label class="menu-select-container">
+            <select id="menu-select"></select>
+          </label>
+          <button id="menu-add-btn">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tree coloring legend -->
+    <div id="legend-panel" class="unselectable-text">
+      <div id="legend-main" class="legend hidden"></div>
+    </div>
+  </body>
+
+  <script>
+    var empressRequire = requirejs.config({
+        'baseUrl' : 'support_files',
+
+        // paths are relative to baseUrl (.js not needed)
+        'paths' : {
+            /* vendor paths */
+            'jquery' : './vendor/jquery-2.2.4.min',
+            'glMatrix' : './vendor/gl-matrix.min',
+            'chroma' : './vendor/chroma.min',
+            'underscore' : './vendor/underscore-min',
+            'spectrum' : './vendor/spectrum.min',
+            'toastr' : './vendor/toastr.min',
+            'filesaver': './vendor/FileSaver.min',
+
+            'ByteArray' : './js/byte-array',
+            'BPTree' : './js/bp-tree',
+            'Camera' : './js/camera',
+            'Drawer' : './js/drawer',
+            'SidePanel' : './js/side-panel-handler',
+            'AnimationPanel' : './js/animation-panel-handler',
+            'Animator' : './js/animator',
+            'BarplotLayer' : './js/barplot-layer',
+            'BarplotPanel' : './js/barplot-panel-handler',
+            'BIOMTable' : './js/biom-table',
+            'Empress' : './js/empress',
+            'Legend' : './js/legend',
+            'Colorer' : './js/colorer',
+            'VectorOps' : './js/vector-ops',
+            'CanvasEvents' : './js/canvas-events',
+            'SelectedNodeMenu' : './js/select-node-menu',
+            'util' : './js/util',
+            'LayoutsUtil': './js/layouts-util',
+            'ExportUtil': './js/export-util',
+            'TreeController': './js/tree-controller',
+            'Shearer': './js/shearer',
+            'EnableDisableTab': './js/enable-disable-tab',
+            'EnableDisableSidePanelTab': './js/enable-disable-side-panel-tab',
+            'EnableDisableAnimationTab': './js/enable-disable-animation-tab',
+
+        }
+    });
+
+    empressRequire(['jquery', 'glMatrix', 'chroma', 'underscore', 'spectrum',
+                    'toastr', 'filesaver', 'ByteArray', 'BPTree', 'Camera',
+                    'Drawer', 'SidePanel', 'AnimationPanel', 'Animator',
+                    'BarplotLayer', 'BarplotPanel', 'BIOMTable', 'Empress',
+                    'Legend', 'Colorer', 'VectorOps', 'CanvasEvents',
+                    'SelectedNodeMenu', 'util', 'LayoutsUtil', 'ExportUtil',
+                    'Shearer', 'EnableDisableSidePanelTab',
+                    'EnableDisableAnimationTab'],
+        function($, gl, chroma, underscore, spectrum, toastr, filesaver,
+                 ByteArray, BPTree, Camera, Drawer, SidePanel, AnimationPanel,
+                 Animator, BarplotLayer, BarplotPanel, BIOMTable, Empress,
+                 Legend, Colorer, VectorOps, CanvasEvents, SelectedNodeMenu,
+                 util, LayoutsUtil, ExportUtil, Shearer,
+                 EnableDisableSidePanelTab, EnableDisableAnimationTab) {
+        // NOTE: the contents of this line are validated in the python
+        // integration tests. If this line is changed somehow, the integration
+        // tests will need to be updated accordingly.
+        var isCommunityPlot = false;
+
+        var isEmpirePlot = false;
+
+        // create EnableDisableSidePanelTabs to disable when animation is
+        // running.
+        // This must be done first so that everything else is linked properly.
+        // For example button click events will no longer work properly.
+        if (isCommunityPlot) {
+            var tabs = [
+                {
+                    tabName: "Sample Metadata Coloring",
+                    container: document.getElementById(
+                        "sample-metadata-coloring-div")
+                },
+                {
+                    tabName: "Feature Metadata Coloring",
+                    container: document.getElementById(
+                        "feature-metadata-coloring-div")
+                },
+                {
+                    tabName: "Shear Tree",
+                    container: document.getElementById("shear-div")
+                },
+            ];
+            var sidePanelTabs = [];
+            // wrap the sidepanel tabs in a EnableDisableSidePanelTab
+            _.each(tabs, function(tabInfo) {
+                sidePanelTabs.push(
+                    new EnableDisableSidePanelTab(tabInfo.tabName,
+                        tabInfo.container, isEmpirePlot)
+                );
+            });
+            var animationTab = new EnableDisableAnimationTab(
+                document.getElementById("animation-div")
+            );
+        }
+        // initialze the tree and model
+        var tree = new BPTree(
+          [2251799813685247, 2251799813685247, 2251799813685247, 2251799813498002, 678199550183843, 620573691007270, 1210640905151721, 1423429961266280, 1843993548216861, 459405380544931, 620375419383803, 1445072424477905, 1436186551019642, 921971857463837, 459403721869302, 2233421955352868, 1101314012958362, 64220310858145, 2055099391425128, 1028374206942874, 269181200319398, 1190120311548320, 2055055663501897, 269182029658103, 2151272959591581, 458400279511974, 1196256379685156, 1027527958743314, 643370880919969, 2055099414887016, 538568559068159, 2248658351891602, 643339732543604, 1838108557742665, 321685072881295, 678196438843859, 596597603464400, 351841549437074, 643371404097161, 321685687451647, 2151273036288585, 1426223880196681, 319172441444937, 321684460488996, 1286742750603263, 2226668119336082, 632669965722697, 321685687669321, 321685687669321, 321685687669321, 321685687669321, 325130248856721, 0, 4],
+          [-1, "AB255436.1", "NC_055723.1", null, "NC_054908.1", null, "NC_018854.1", null, "NC_019514.1", null, "NC_019423.1", null, "NC_019705.1", null, "MN026741.1", null, "MK962750.1", "MN994504.1", null, null, "AF125520.1", "NC_019710.1", null, null, "NC_048064.1", "MN070121", null, null, "AP012540.1", "NC_049424.1", null, null, "NC_054942.1", "NC_054938.1", null, null, "MN095771.1", null, "MZ501058", "NC_027983.1", null, null, "EF469154.1", "NC_016761.1", null, null, "NC_054910.1", "NC_070949.1", null, null, "HE815464.1", "HM563683.1", null, null, "NC_021344.2", null, "MH992121.1", null, "MK234886.1", null, "MT311645", "MT682712.1", null, null, "NC_042307.1", "MZ501108", null, null, "NC_049832.1", null, "NC_054940.1", null, "MH719191", "MH992510.1", null, null, "NC_028780.1", null, "NC_030953.1", "NC_048009.1", null, null, "NC_042039.1", null, "MH719195", null, "NC_048205.1", null, "EU272037.1", "NC_071003.1", null, null, "HM035025.1", "NC_025449.1", null, null, "NC_054918.1", null, "NC_054936.1", null, "NC_054916.1", "MH051913.1", null, "MH051915.1", "NC_054926.1", null, null, null, "MH898687.1", "MK886800.1", null, "MG867727.1", "MK327946.1", null, null, null, "AF396866.1", "AJ556162.1", null, "MK373785.1", "MN445182", null, null, null, "NC_028840.1", "MF327008.1", null, null, "MG471392.1", "NC_048150.1", null, null, "NC_024125.2", "NC_061437.1", null, null, "KT321317.2", "KU230356.1", null, null, "NC_018274.1", "NC_019715.1", null, null, "KJ025957.1", "KM236242.1", null, null, "MK327942.1", "MK373779.1", null, null, "KM236244.1", "NC_031087.1", "MW149275", null, null, null, "MF001359.1", "NC_011356.1", null, "NC_008152.1", "MZ501074", null, null, null, "MN994497.1", "MT074461", null, "KR233164.1", "KU925172.1", null, "NC_025448.1", "KT184311.1", null, null, null, null, "AP005154.1", "AP012535.1", null, "NC_041919.1", "MH745368.2", null, null, "MT176424.1", "MT176426.1", null, null, "NC_048794.1", "MH553563.1", null, null, null, "NC_048078.1", "MN850648.1", null, "NC_049464.1", "NC_031062.2", null, null, null, "AJ604530.1", "AP019559.1", "AY543070.1", "NC_005859.1", null, "MW006479", null, null, "MZ501075", null, "MK373792", null, "KJ190157.1", null, "KY677846.1", null, "MH370378.1", null, "LN887948.1", null, "MK373797", null, null, "MT653143", null, "MF402939.1", null, "MT233524", null, "MW006478", null, "MT653146", "MT843274", null, null, "KY114934.1", "LR027384.1", null, null, "OQ383620", "KR422353.1", null, null, "MF431730.1", "MF681663.1", null, null, null, "MK962626.1", "MK962641.1", null, "NC_042129.1", "NC_019769.1", null, null, "LR595859.1", "NC_028754.1", null, null, null, "NC_048694.1", "OQ680478", null, "OQ680479", "MH443101.1", null, null, "NC_002730.1", "NC_007637.1", null, null, null, "NC_023589.1", "MG775043.2", null, "MT179807.1", "KP890822.1", null, null, null, "KM979354.1", "KM979355.1", null, "MN994502.1", "MT074448.1", null, null, null, "OM386660", "NC_054927.1", null, "NC_054966.1", "CP000917.1", null, null, null, "MK599416.1", "NC_031047.1", null, "NC_021775.1", "EU863409.1", null, null, null, "MN067333.1", "MN316588.1", null, "FJ184280.1", "GU296433.1", null, null, null, "AF157835.1", "AF335538.1", "AY052766.1", "BK000583.1", "NC_002371.1", null, "NC_002371.2", null, "DQ003260.1", null, null, "LT714109.2", null, "NC_011802.1", null, "NC_042346.1", null, "NC_004348.1", null, null, null, "AY150271.2", null, "NC_004775.2", null, "AF547987.1", null, "FJ188381.1", null, "KP682381.1", null, null, "NC_024786.1", "KR269720.1", null, "LR597636.1", "NC_048818.1", null, null, "LR215724.1", "NC_048627.1", null, "OQ031075", "MZ398246", null, null, null, "NC_054900.1", "NC_052656.1", null, "MH370375.1", "NC_048856.1", null, "NC_054920.1", "NC_031011.1", null, null, null, null, null, "MW006481", "NC_048197.1", null, "KM370384.1", "KT176190.1", null, null, null, "NC_003085.1", "LR215723.1", null, "NC_023579.1", "NC_054929.1", null, null, null, "NC_054969.1", "HQ829472.1", null, "MH321493.1", "GQ413937.1", null, null, null, "LN881732.1", "LR215722.1", null, "NC_017969.1", "MF036690.1", null, null, "MH243439.1", "MH363708.1", null, null, null, "MK962757.1", "NC_048082.1", null, "NC_019767.1", "HQ728266.1", null, null, null, "MT080103", "NC_005344.1", null, "NC_054909.1", "NC_047979.1", null, null, null, "KU867876.1", "NC_054907.1", null, "NC_049953.1", "KJ419279.1", null, "KP143763.1", "NC_047885.1", null, null, null, null, "NC_019719.1", "KU977420.1", null, "NC_031022.1", "OM386657", null, null, null, "LN881728.1", "LN881729.1", null, "NC_027381.1", "NC_070874.1", null, null, null, "NC_027404.1", "KM607000.1", null, "KM501444.1", "NC_054933.1", null, null, "KF620435.1", "NC_047889.1", null, null, null, "MK335533.1", "KF669651.1", null, "MF612073.1", "NC_054919.1", null, null, null, "MH203051.1", "MH443100.1", null, "NC_054912.1", "MT176425.1", null, null, null, "MT682714.1", "NC_042084.1", null, "OQ680481", "MZ398021", null, null, null, "LC348380.1", "MF158045.1", null, "MN895437.1", "NC_025419.1", null, null, "HM997020.1", "KR269718.1", null, "HQ406778.1", "JN391180.1", null, null, null, null, "NC_048865.1", "NC_054906.1", null, "KC801932.2", "NC_048748.1", null, null, null, "NC_062776.1", "MZ130481.1", "NC_024711.1", "NC_067194.1", null, null, "NC_062771.1", null, null, "MZ130486.1", null, "MZ130476.1", null, "NC_055879.1", null, "MT774386.1", null, "MT774383.1", null, null, "MF158046.1", "NC_062582.1", null, "MK373781.1", "MK373796.1", null, null, "MZ501103", "LN881726.1", null, "HQ665011.1", "JN132397.1", null, null, null, null, "NC_047809.1", "AM084415.1", "AY288927.2", "NC_004831.1", null, "NC_004831.2", null, "KM366097.1", null, "GU595417.2", null, "NC_031271.1", null, "NC_020414.2", null, null, "AY370674.1", null, "MG775042.2", null, "MG004687.1", null, "MH729818.1", null, "NC_047920.1", null, null, "KY295897.1", null, "JN986844.1", null, "KX279892.2", "NC_048105.1", null, "MG099933.1", "MG251390.1", null, null, null, null, "KX098389.2", "KX130865.1", null, "MG018928.1", "KF806588.1", null, null, null, "KX009778.3", "MN956514.1", null, "MG387042.1", "MG781190.1", null, null, null, "KY963424.1", "NC_054970.1", null, "OK143207", "JN986845.1", null, null, null, "AF399011.1", "NC_004629.1", null, "MF805716.1", null, "JX233784.1", null, "NC_042060.1", null, "NC_042081.1", null, "NC_070882.1", null, "NC_062581.1", null, "NC_028999.1", null, "NC_048170.1", null, "JQ031132.1", null, "NC_015157.1", null, null, "KX130862.1", "KX228399.1", null, "ON185585", "JX561091.1", null, null, null, "NC_070904.1", "AF083977.1", "NC_000929.1", null, "KP010268.1", null, "NC_027382.1", null, "NC_027992", null, null, "NC_049391.1", null, "LR595891.1", null, "NC_020198.1", null, "NC_070931.1", null, "AY539836.1", null, "NC_049343.1", null, "DQ631426.1", null, "NC_070759.1", null, null, "JQ182734.1", "JQ347801.1", null, "OW251746", "JQ312117.1", null, null, null, "OK272477", "NC_047835.1", null, "MT682713.1", "NC_047822.1", null, null, null, "MH809535.1", "MK327939.1", null, "KC139520.1", "KF925357.1", null, null, "NC_048852.1", "NC_049926.1", null, null, null, "KX130861.1", "KX130863.1", null, "KX130864.1", "KY290975.3", null, null, "MT074447", "MT074450.1", null, "NC_054464.1", "OK108607", null, null, null, null, "NC_048731.1", "JN022534.1", null, "MT074465.1", "MT074467", null, "NC_054931.1", "NC_008515.1", null, null, null, "JN202312.1", "NC_054934.1", null, "NC_048163.1", "NC_054901.1", null, null, null, null, "AF063097.1", "NC_001895.1", null, "MT374858.1", null, "AY251033.1", null, "NC_070908.1", null, "LR595870.1", null, "MN016939.1", null, "MT374857.1", null, "KF322032.1", null, "LR595883.1", null, "LR595885.1", null, "NC_004745.1", null, "LR595873.1", null, "KR073661.1", null, "LR595887.1", null, "KR073660.1", null, "NC_049461.1", null, "KC618326.1", null, "NC_070903.1", null, null, "OQ383622", "MH051916.1", null, "NC_027353.1", "NC_054925.1", null, null, null, "KC139518.1", "KF192075.1", null, "NC_019709.1", "MN716856.1", null, null, null, "MN536026.1", "NC_054921.1", null, "MG746602.1", "NC_054917.1", null, null, null, "NC_048004.1", "EU734174.1", "NC_001604.1", null, "NC_011045.1", null, "JQ965703.1", null, "MH717098.1", null, "JQ965700.1", null, "KU927499.1", null, "NC_047939.1", null, "MH717099.1", null, "NC_047940.1", null, "NC_031114.1", null, "MG488277.1", null, "MH382198.1", null, "NC_048079.1", null, "MK310182.1", null, null, "KM242061.1", null, "MG832642.1", null, null, "NC_054932.1", "JX536493.1", null, "LR597643.1", "NC_054928.1", null, null, "MN580668.1", "MN895434.1", null, "KY914478.1", "LC348379.1", null, null, "NC_054904.1", "NC_048013.1", null, null, null, "MN552150.1", "MN970211.1", null, "MN895438.1", "MN994496.1", null, "KX258185.1", "LR597655", null, null, null, null, "NC_054967.1", "MH370369.1", null, "NC_019503.1", "NC_016562.1", null, null, null, "MT251347.1", "MT708550.1", null, "MF001354.1", "MF775703.1", null, null, "NC_049831.1", "NC_049952.1", null, null, null, "MN022787.1", "NC_015464.1", null, "NC_054930.1", "NC_054943.1", null, "OK254197", "OK665835", null, null, null, null, null, "MF001360.1", null, "AF069308.1", "AF069529.1", "NC_002167.1", null, "HM173637.1", null, "NC_016160.1", null, "JQ086369.1", null, "JQ086372.1", null, null, "JQ182727.1", null, "JQ086370.1", null, "JQ086374.1", null, "JQ086373.1", null, "JQ182731.1", null, "JQ182732.1", null, "JQ086377.1", null, "NC_019768.1", null, "KY979108.1", null, "JQ182726.1", null, "JQ182733.1", null, "EU078592.1", "JQ086376.1", "NC_001416.1", null, null, "JQ182735.1", null, "MH547045.1", null, "NC_049951.1", null, "NC_019711.1", null, "NC_042057.1", null, "LR597639.1", null, "NC_019723.1", null, "NC_049955.1", null, "LR595850.1", null, "LR597635.1", null, "MT135176", null, "LR595862.1", null, null, null, "MH837626.1", null, "AF158101.6", "NC_000866.4", null, "AP018814.1", null, "AP011113.1", null, "DQ904452.1", null, "FJ839692.1", null, "KF208315.1", null, "AP018932.1", null, "JX128259.1", null, "MK373787.1", null, "FJ839693.1", null, "JN986846.1", null, "KM606994.1", null, "KJ668714.2", null, "HE956711.1", null, "NC_054915.1", null, "KT184308.1", "KT184312.1", null, null, "KX828711.1", null, null, "MF327007.1", null, "MT577844", null, "NC_042093.1", null, "MG459987.2", null, "AB981169.1", "AF234172.1", "NC_005856.1", null, "FO818745.1", null, "KU760857.1", null, "NC_042128.1", null, "NC_031129.1", null, "KC139649.1", null, "KP063541.1", null, null, "NC_028943.1", null, "AP014629.1", null, "NC_026611.1", null, "OQ383618", null, null, "AJ318471.1", "NC_003298.1", null, "JX421753.1", null, "KC960671.1", null, "NC_047864.1", null, "NC_047867.1", null, "EU547803.1", null, "KP791805.1", null, "KP313531.1", null, "KU687347.1", null, "KP791806.1", null, "MH717709.1", null, null, "AY216660.1", "NC_005833.1", null, "KU194205.1", null, "KU194206.1", null, "NC_041873.1", null, "MH051911.1", null, "NC_041874.1", null, "MH285980.1", null, "KX828710.1", null, "OP094641", null, "MN296515.1", null, "JX912252.1", null, "KY985004.1", null, "NC_047959.1", null, "OL800706", null, "MZ501092", null, "OL960579", null, null, "NC_048786.1", null, "MK972715.1", null, "EF056009.1", "NC_008720.1", null, "MG922974.1", null, "NC_048700.1", null, "NC_070873.1", null, "NC_070850.1", null, "JX415535.1", null, "NC_070872.1", null, "NC_070871.1", null, "MK962630.1", null, "NC_070870.1", null, "NC_054971.1", null, "MK962629.1", null, "NC_070869.1", null, "HQ259105.1", null, "NC_041906.1", null, "KC206276.2", null, null, "AB334720.1", "GQ153919.1", "NC_001419.1", null, null, "AB334721.1", "NC_003287.2", null, "NC_003287.1", null, "JX412914.1", null, null, "GQ153918.1", null, "GQ153917.1", null, "GQ153916.1", null, null, "JX880034.1", null, "NC_019725.1", null, "NC_055748.1", null, "MT193890", null, "KT239446.1", null, "MT374855.1", null, "MH899585.1", null, "NC_015933.1", null, "NC_024139.1", null, "NC_047828.1", null, "GU911303.1", null, "NC_070902.1", null, "AF232233.1", null, "NC_054941.1", null, "MW749005", null, "MK327938.1", null, "OL960578", null, "NC_041995.1", null, "MF468274.1", null, "FN422399.1", null, "MH333064.1", null, "NC_054911.1", null, "KJ135004.2", null, "NC_026010.1", null, "MZ501051", null, "OL615010", null, "AP012539.1", null, "NC_071045.1", null, "NC_019720.1", null, "OP292674", null, "NC_049467.1", null, "NC_049457.1", null, "LR595866.1", null, "MG966531.1", null, "NC_049389.1", null, "MK907237.1", null, "CP019275.1", null, "MG973030.1", null, "NC_015265.1", null, "NC_054924.1", null, "NC_070905.1", null, "NC_047895.1", null, "KF562340.1", null, "NC_047996.1", null, "LR595869.1", null, "MH779619.1", null, "NC_047785.1", null, "AY135739.1", null, "NC_055846.1", null, "KX833211.1", null, "NC_055845.1", null, "NC_022750.1", null, "NC_022744.1", null, "MK542821.1", null, "NC_049386.1", null, "NC_055713.1", null, "NC_049390.1", null, "LC516895.1", null, "NC_071037.1", null, "NC_024790.1", null, "HM035024.1", null, "NC_049388.1", null, "NC_024142.2", null, "MF093736.1", null, "KC139521.1", null, "OL960582", null, "NC_049385.1", null, "KF700371.1", null, "MT682715", null, "NC_019714.1", null, "NC_027387.1", null, "NC_005056.1", null, "OP455115", null, "DQ079869.1", "DQ079877.1", "NC_001420.2", null, null, "NC_001422.1", null, "NC_001330.1", null, null, "BK013361.1", "NC_001417.2", null, "MZ679828", null, "JX045650.1", null, "JX045649.1", null, "OM514499", null, null, "MN163281.1", "NC_019399.1", null],
+          [-1, 0.5, 0.5, 0.0, 0.5, -0.12638885, 0.37674034, 0.061431333, 0.43856901, 0.030417979, 0.46958202, 0.014861941, 0.48513812, 0.015627384, 0.49997556, 1.2391692e-05, 0.5, 0.5, -1.2391692e-05, 6.1912656e-06, 0.49999997, 0.50000006, -6.1912656e-06, 3.0811016e-06, 0.5, 0.5, -3.0811016e-06, 1.5209725e-06, 0.5, 0.5, -1.5209725e-06, 7.3832848e-07, 0.5, 0.5, -7.3832848e-07, 3.5762787e-07, 0.49999964, 1.4862457e-07, 0.5, 0.5, -1.4862457e-07, 4.9702894e-08, 0.49999997, 0.50000006, -4.9702894e-08, 0.0, 0.5, 0.5, 0.0, -2.5096693e-08, 0.5, 0.5, 2.5096693e-08, 0.0, 0.5, -0.12569964, 0.37605113, 0.061753362, 0.43824688, 0.06252183, 0.5, 0.5, -0.00010981038, 5.5408731e-05, 0.49999997, 0.50000006, -5.5406868e-05, 2.7775764e-05, 0.49997222, 1.3917685e-05, 0.49998608, 7.000448e-06, 0.5, 0.5, -7.000448e-06, 3.4868717e-06, 0.49999651, 1.7352053e-06, 0.5, 0.5, -1.7352053e-06, 8.4936619e-07, 0.49999917, 4.1723251e-07, 0.49999958, 1.937151e-07, 0.49999982, 8.3839502e-08, 0.5, 0.5, -8.3839502e-08, 2.8049245e-08, 0.5, 0.5, -2.8049245e-08, 0.0, 0.5, 0.0, 0.5, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, -8.5149496e-09, 0.5, 0.5, -2.5346825e-08, 0.5, 0.5, 2.5346825e-08, 8.5149496e-09, -8.6305372e-09, 0.5, 0.5, 8.6305372e-09, -1.1154086e-08, 0.5, 0.5, 1.1154086e-08, -2.2572173e-08, 0.5, 0.5, 2.2572173e-08, -1.1490052e-08, 0.5, 0.5, 1.1490052e-08, -2.3260348e-08, 0.5, 0.5, 2.3260348e-08, -1.1846886e-08, 0.5, 0.5, 1.1846886e-08, -2.3991806e-08, 0.5, 0.5, 2.3991806e-08, -1.2071827e-08, 0.5, 0.5, 0.5, 1.4901161e-08, 1.2071827e-08, 0.0, 0.5, 0.5, 0.0, 0.49999997, 0.50000006, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -8.7093541e-09, 0.5, 0.5, 8.7093541e-09, -8.9546885e-09, 0.5, 0.5, 8.9546885e-09, 0.0, 0.0, 0.5, 0.5, -8.9969276e-09, 0.5, 0.5, 8.9969276e-09, 0.0, 1.3880083e-08, 0.49998581, 0.49307853, 0.27426112, 0.27198386, 0.2050169, 0.47927809, 0.01380904, 0.0038294196, 0.49690181, 0.0016341358, 0.49853373, 0.00081007183, 0.49934036, 0.00037416816, 0.49971583, 0.00014935434, 0.49986339, 7.0437789e-05, 0.49993593, 3.4421682e-05, 0.49996677, 1.5810132e-05, 7.2866678e-06, 0.49999261, 5.081296e-06, 0.49999541, 5.2154064e-07, 0.49999946, 3.2782555e-07, 0.49999979, 1.9664745e-07, 0.5, 0.5, -1.7833514e-08, 6.3411989e-08, 0.5, 0.5, -3.8073438e-09, 1.632197e-08, 0.5, 0.5, -1.4208084e-09, 3.7252903e-09, 0.5, 0.5, 3.7252903e-09, 1.3880083e-08, -8.864447e-10, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -9.0395673e-09, 0.5, 0.5, 9.0395673e-09, -8.864447e-10, 2.910383e-10, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -9.2142445e-09, 0.5, 0.5, 9.2142445e-09, 2.910383e-10, 2.0372681e-10, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 2.0372681e-10, -8.1490725e-10, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -8.1490725e-10, 2.1827873e-10, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 2.1827873e-10, 9.4587449e-11, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 9.4587449e-11, -4.3655746e-11, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -4.3655746e-11, 2.2615108e-08, 0.4999848, 0.49996772, 0.48830232, 0.26454002, 0.26204997, 0.11790065, 0.38209933, 0.090383381, 0.47240415, 0.015935808, 0.0070315152, 0.49531442, 0.0027033985, 0.4980121, 0.0012493432, 0.49925956, 0.00040885806, 0.49966565, 0.00030240417, 1.5795231e-05, 1.0088086e-05, 0.4999947, 1.7136335e-06, 0.49999827, 6.4074993e-07, 0.49999958, 7.0035458e-07, 0.49999994, 1.6391277e-07, 0.49999994, 5.0058976e-08, 1.1641987e-08, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.5, 0.5, -9.4892965e-09, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 9.4892965e-09, 0.0, 1.1641987e-08, -7.4519448e-09, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -7.4519448e-09, 3.7266545e-09, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 3.7266545e-09, -9.3132257e-10, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -9.3132257e-10, 4.6563287e-10, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 4.6563287e-10, -4.6564708e-10, 0.5, 0.5, -9.6330739e-09, 0.5, 0.5, 9.6330739e-09, -4.6564708e-10, 1.1630163e-10, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 1.1630163e-10, 5.8207661e-11, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 5.8207661e-11, -2.8421709e-14, 0.5, 0.5, -1.1773757e-08, 0.5, 0.5, 1.1773757e-08, -2.8421709e-14, 2.8421709e-14, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 2.8421709e-14, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.5, 0.5, -1.1701525e-08, 0.5, 0.5, 1.1701525e-08, 0.0, -3.6393111e-12, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -3.6393111e-12, 9.0971675e-13, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 9.0971675e-13, 1.110223e-16, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.49999988, 0.50000012, 0.0, 0.5, 0.5, 0.0, 0.0, 1.110223e-16, 2.2715163e-13, 0.5, 0.5, 1.1559688e-08, 0.5, 0.5, -1.1559688e-08, 2.2715163e-13, 1.6779438e-08, 0.49976256, 0.3984254, 0.24937639, 0.25062361, 0.1480971, 0.050869092, 0.44913089, 0.050633043, 0.00012011826, 0.4998799, 9.0181828e-05, 0.49996907, 1.8820167e-05, 0.49998826, 6.1392784e-06, 0.49999386, 3.2782555e-06, 0.49999982, 1.234918e-06, -1.6442661e-08, 0.5, 0.5, -9.6819726e-09, 0.5, 0.5, 9.6819726e-09, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 1.6442661e-08, 1.4871988e-08, 0.49999979, 0.49989051, 0.27244243, 0.26964757, 0.11431794, 0.38643211, 0.062018886, 0.44829112, 0.026345268, 0.47455597, 0.017068624, 0.4915967, 0.0056993514, 0.49728489, 0.0026043057, 5.9619546e-05, 0.49995261, 3.0905008e-05, 0.49998447, 9.2387199e-06, 0.49999368, 2.592802e-06, 0.4999986, 6.4074993e-07, 0.49999982, 8.9406967e-08, 5.9604645e-08, 0.49999994, 0.0, 0.5, 1.2481314e-07, 0.5, 0.5, -1.0961774e-08, 0.5, 0.5, 1.0961774e-08, -5.6038587e-09, 1.4871988e-08, 1.4587442e-11, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 1.4587442e-11, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.5, 0.5, -9.7812753e-09, 0.5, 0.5, 9.7812753e-09, 0.0, 2.0440851e-08, 0.26529723, 0.26364779, 0.15599294, 0.42106456, 0.039800182, 0.46074986, 0.022257313, 0.4829545, 0.011718437, 0.49465686, 0.0052771717, 0.49993408, 5.865097e-05, 0.49999392, 3.2037497e-06, 0.49999928, 9.5367432e-07, 0.4999997, 1.4901161e-07, 0.49999997, 0.0, 0.5, 1.5790742e-07, 1.1641532e-10, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 1.1641532e-10, 1.0833872e-08, 0.49955374, 0.26153317, 0.26002684, 0.13730124, 0.39852127, 0.050817043, 0.44918296, 0.049841464, 0.4990235, 0.00053469837, 0.00022834539, 0.49977946, 0.00011138618, 0.4998886, 7.0750713e-05, 0.49996185, 2.1114945e-05, 0.49997914, 1.1473894e-05, 0.49999306, 2.399087e-06, 0.49999845, 7.8976154e-07, 0.49999958, 2.2351742e-07, 0.49999976, 6.7578105e-07, -7.7991729e-09, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -7.7991729e-09, 7.4796844e-09, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 7.4796844e-09, 9.3132257e-10, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 9.3132257e-10, 4.6566129e-10, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 4.6566129e-10, -1.8983609e-08, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 1.8052287e-08, 2.6003987e-08, 0.26487184, 0.26286316, 0.21130235, 0.47616017, 0.012893304, 0.48903167, 0.0061140656, 0.49513471, 0.0027774423, 0.49790847, 0.0010596514, 0.49896252, 0.00055980682, 0.49951899, 0.00024452806, 0.4997662, 0.00012283027, 0.49988478, 6.1526895e-05, 0.49994481, 2.8476119e-05, 0.49997205, 1.5884638e-05, 0.4999865, 7.3462725e-06, 0.49999303, 1.8775463e-06, 0.49999806, 7.8976154e-07, 0.49999946, 5.0663948e-07, 0.49999967, 2.2351742e-07, 0.49999988, 1.0430813e-07, 0.49999994, 6.3402979e-08, 5.8207661e-11, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 5.8207661e-11, -2.9331204e-11, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -2.9331204e-11, 1.1368684e-13, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 1.1368684e-13, 2.6172065e-08, 0.49999985, 0.39128566, 0.38950431, 0.064430863, 0.45557919, 0.025260165, 0.48077863, 0.009698227, 0.49044925, 0.0062652975, 0.4967007, 0.0021059066, 0.49880594, 0.0007506609, 0.49955446, 0.00023196638, 0.49978256, 0.0001269877, 0.49991199, 5.6609511e-05, 0.4999665, 1.8119812e-05, 0.49998665, 8.3297491e-06, 0.49999303, 2.1755695e-06, 0.4999983, 1.2665987e-06, 0.49999958, 3.2782555e-07, 5.9604645e-08, 0.49999994, 8.9406967e-08, 0.49999997, 6.5097545e-08, -2.1197598e-08, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 2.0266503e-08, 2.9802322e-08, 0.49999997, 3.8411883e-08, 0.49872336, 0.2703234, 0.26824158, 0.18113603, 0.45136404, 0.034996822, 0.48633069, 0.0075514317, 0.49386168, 0.0031137466, 0.49696565, 0.0017623007, 0.00065305829, 0.49937639, 0.00033697486, 0.49970838, 0.00017188489, 0.49988186, 6.16014e-05, 0.49994162, 3.5494566e-05, 0.49997613, 1.3425946e-05, 0.49998719, 6.4522028e-06, 0.49999452, 2.1606684e-06, 0.49999881, 9.0897083e-07, 0.5, 0.0, 0.5, 5.9604645e-08, 0.49999994, 9.2366065e-08, 0.42092389, 0.33385277, 0.33164221, 0.087328628, 0.042374507, 0.46320927, 0.019660696, 0.48281932, 0.013641283, 0.4964456, 0.0025927424, 0.49903941, 0.00048446655, 0.49951804, 0.00030621886, 0.49982253, 9.0420246e-05, 0.49991161, 5.7831407e-05, 0.49996775, 1.5601516e-05, 0.49998498, 1.218915e-05, 0.49999681, 7.0035458e-07, 0.49999976, 1.6391277e-07, 0.49999976, 4.4407574e-07, 8.0797406e-08, 4.4703484e-08, 0.49999994, 3.1156972e-08, 0.26880854, 0.26642144, 0.21192569, 0.48074931, 0.010253847, 0.49098742, 0.0053316057, 0.49631026, 0.0019805133, 0.49828824, 0.00088945031, 0.49917504, 0.00041852891, 0.49959439, 0.00022630394, 0.49981791, 0.00011126697, 0.49993193, 3.8132071e-05, 0.49996722, 1.5288591e-05, 0.49998483, 7.6591969e-06, 0.49999234, 5.2154064e-06, 0.49999514, 1.3113022e-06, 0.49999899, 1.3411045e-07, 0.5, 1.9391922e-07, 0.5, 0.5, -1.5105286e-08, 5.9604645e-08, 0.49999994, 1.1785464e-07, 4.4703484e-08, 0.49999994, 4.4703484e-08, 0.49999994, 4.4703484e-08, 0.49999994, 4.4703484e-08, 0.49999994, 5.6373096e-08, 0.49998546, 0.28136984, 0.27966514, 0.13175872, 0.41286883, 0.045983687, 0.45872259, 0.02409555, 0.48276323, 0.014569193, 0.49732456, 0.0026128441, 0.49993294, 3.1605363e-05, 0.49996841, 1.6614795e-05, 7.8231096e-06, 0.49999267, 2.1755695e-06, 0.49999842, 4.1723251e-07, 0.49999958, 3.2782555e-07, 0.49999955, 8.3769658e-07, 5.5243333e-08, 0.26503739, 0.2628676, 0.11777578, 0.38247168, 0.073377088, 0.45572168, 0.026594803, 0.48225647, 0.012723938, 0.49496573, 0.0045747608, 0.4995383, 0.00043530762, 0.49997419, 1.5586615e-05, 0.49998602, 7.3611736e-06, 0.49999276, 3.6656857e-06, 0.49999949, 5.0663948e-07, 0.49999973, 6.600124e-07, 3.0216242e-08, 0.26733756, 0.26524246, 0.19018795, 0.45744705, 0.024277866, 0.48167092, 0.012243018, 0.49389881, 0.0036627352, 0.49755821, 0.0012777448, 0.49883163, 0.0006223321, 0.49945205, 0.00028020144, 0.49972934, 0.00013923645, 0.49986851, 8.0630183e-05, 0.49994826, 2.707541e-05, 0.49997783, 1.3276935e-05, 0.49998683, 7.9423189e-06, 0.49999356, 2.0414591e-06, 0.49999857, 7.0035458e-07, 0.49999952, 2.2351742e-07, 0.49999982, 4.5407148e-07, 0.0, 0.5, 0.0, 0.5, -3.0566554e-09, 0.25926054, 0.25790948, 0.20016274, 0.45933226, 0.020422399, 0.47969633, 0.015108481, 0.49479151, 0.0027066469, 0.49748993, 0.0020043403, 0.49949193, 0.00026074052, 0.49975154, 0.00012697279, 0.49987608, 6.903708e-05, 0.49994767, 3.3646822e-05, 0.4999775, 9.6261501e-06, 0.49999073, 6.0200691e-06, 0.49999398, 1.7881393e-06, 0.49999845, 5.9604645e-07, 0.49999946, 4.0233135e-07, 0.49999994, 1.6391277e-07, 0.49999976, 2.4147522e-07, 1.648732e-07, 0.42692238, 0.34153172, 0.34074327, 0.085640147, 0.013146402, 0.32897586, 0.32792914, 0.0072034597, 0.33481655, 0.049342617, 0.38532108, 0.055017829, 0.043127045, 0.48312837, 0.015187785, 0.49831372, 0.00098711252, 0.4992969, 0.00070281234, 1.6391277e-07, 0.49999976, 1.937151e-07, 0.49999982, 1.937151e-07, 0.49999982, 2.0861626e-07, 0.49999979, 2.0861626e-07, 0.49999979, 2.2351742e-07, 0.49999976, 2.2351742e-07, 0.49999976, 2.2351742e-07, 0.49999976, 2.2351742e-07, 0.49999976, 2.3841858e-07, 0.49999976, 2.2351742e-07, 0.49999976, 2.3841858e-07, 0.49999976, 2.5331974e-07, 0.49999976, 2.3841858e-07, 0.49999976, 2.682209e-07, 0.49999973, 2.8312206e-07, 0.4999997, 2.5331974e-07, 0.49999976, 2.682209e-07, 0.49999973, 2.8312206e-07, 0.4999997, 2.8312206e-07, 0.4999997, 2.8312206e-07, 0.4999997, 2.9802322e-07, 0.4999997, 2.9802322e-07, 0.4999997, 2.9802322e-07, 0.4999997, 2.9802322e-07, 0.4999997, 3.1292439e-07, 0.4999997, 3.2782555e-07, 0.49999967, 3.4272671e-07, 0.49999964, 3.2782555e-07, 0.49999967, 3.5762787e-07, 0.49999964, 3.4272671e-07, 0.49999964, 3.5762787e-07, 0.49999964, 3.5762787e-07, 0.49999964, 3.7252903e-07, 0.49999964, 3.8743019e-07, 0.49999961, 4.0233135e-07, 0.49999958, 4.0233135e-07, 0.49999958, 4.1723251e-07, 0.49999958, 4.3213367e-07, 0.49999958, 4.3213367e-07, 0.49999958, 4.4703484e-07, 0.49999955, 8.9406967e-07, 0.49999911, 9.2387199e-07, 0.49999908, 9.5367432e-07, 0.49999905, 9.8347664e-07, 0.49999902, 1.0281801e-06, 0.49999899, 1.0430813e-06, 0.49999896, 1.0877848e-06, 0.49999893, 1.1175871e-06, 0.49999887, 1.1622906e-06, 0.49999884, 1.7881393e-06, 0.49999821, 1.8775463e-06, 0.49999812, 1.937151e-06, 0.49999806, 2.0265579e-06, 0.49999797, 2.1159649e-06, 0.49999788, 2.220273e-06, 0.49999779, 2.3394823e-06, 0.49999768, 2.4586916e-06, 0.49999756, 2.592802e-06, 0.49999741, 2.7418137e-06, 0.49999726, 2.9206276e-06, 0.49999708, 3.0994415e-06, 0.4999969, 3.3229589e-06, 0.49999666, 3.5911798e-06, 0.49999642, 3.8892031e-06, 0.49999613, 4.2468309e-06, 0.49999577, 4.6640635e-06, 0.49999535, 5.1856041e-06, 0.49999481, 7.7486038e-06, 0.49999225, 1.1026859e-05, 0.49998897, 1.2889504e-05, 0.49998713, 1.5467405e-05, 0.49998453, 2.6941299e-05, 0.49997306, 0.00011627842, 0.40001214, 0.26996598, 0.26942405, 0.1303978, 0.037374273, 0.43729824, 0.042059541, 0.47941792, 0.020463716, 0.0003413856, 0.37904039, 0.37850961, 0.075137213, 0.45404029, 0.034377694, 0.48838353, 0.0085407645, 0.49691427, 0.0025924742, 0.49950692, 0.00015297532, 0.0, 0.5, 0.5, 0.0]
+        );
+        var fmCols = ["protein_ID", "function", "protein_length", "genome_length", "input_seq"];
+
+        var splitTaxonomyCols = [];
+
+        var canvas = document.getElementById('tree-surface');
+
+        var biom = null;
+        if (isCommunityPlot) {
+            biom = new BIOMTable(
+              null,
+              null,
+              {},
+              {},
+              null,
+              null,
+              null,
+            );
+        }
+        var empress = new Empress(
+            tree,
+            biom,
+            fmCols,
+            splitTaxonomyCols,
+            {"205": ["NC_005859.1_178", "nan", "68", "104481", "1"], "318": ["NC_002371.1_65", "nan", "668", "37314", "1"], "516": ["NC_024711.1_89", "nan", "52", "91284", "1"], "553": ["NC_004831.1_51", "nan", "48", "39972", "1"], "615": ["NC_004629.1_366", "nan", "763", "257586", "1"], "648": ["NC_000929.1_54", "nan", "232", "35091", "1"], "739": ["NC_001895.1_42", "nan", "587", "30858", "1"], "802": ["NC_001604.1_49", "nan", "587", "36255", "1"], "904": ["NC_002167.1_60", "nan", "68", "35256", "1"], "939": ["NC_001416.1_64", "nan", "69", "41160", "1"], "971": ["NC_000866.4_262", "nan", "313", "157368", "1"], "1018": ["NC_005856.1_97", "nan", "70", "83553", "1"], "1043": ["NC_003298.1_44", "nan", "587", "34419", "1"], "1067": ["NC_005833.1_74", "nan", "124", "44523", "1"], "1105": ["NC_008720.1_73", "nan", "43", "66261", "1"], "1140": ["NC_001419.1_8", "nan", "134", "5661", "1"], "1144": ["NC_003287.2_8", "nan", "134", "5661", "1"], "1146": ["NC_003287.1_8", "nan", "134", "5661", "1"], "1306": ["NC_001420.2_6", "nan", "338", "5211", "1"], "1309": ["NC_001422.1_8", "nan", "468", "5175", "1"], "1315": ["NC_001417.2_3", "nan", "546", "3213", "1"]},
+            {},
+            canvas
+        );
+        empress.initialize();
+
+        // The side menu
+        var sPanel = new SidePanel(document.getElementById('side-panel'),
+                                   empress);
+        sPanel.addSettingsTab();
+        sPanel.addLayoutTab();
+        sPanel.addExportTab();
+
+        var shearer = new Shearer(
+          empress,
+          empress.getFeatureMetadataCategories(),
+        );
+        shearer.registerObserver(sPanel);
+
+        // Only show the sample metadata coloring / animation panels if a
+        // feature table and sample metadata file were provided
+        if (isCommunityPlot) {
+            sPanel.addSampleTab();
+
+            // Create animator state machine
+            var animator = new Animator(empress, sidePanelTabs);
+
+            // Add animator GUI components
+            var animationPanel = new AnimationPanel(animator, animationTab);
+            animationPanel.addAnimationTab();
+            document.getElementById("animationOpenButton").classList
+                .remove("hidden");
+        } else {
+            $(".needs-community-data").addClass("hidden");
+            if (fmCols.length === 0) {
+                // Neither feature nor sample metadata is available, so hide
+                // things that require at least one type of metadata (e.g.
+                // the barplot panel)
+                $(".needs-metadata").addClass("hidden");
+            }
+        }
+
+        // Similarly, only show the feature metadata coloring panel if feature
+        // metadata was provided
+        if (fmCols.length > 0) {
+            sPanel.addFeatureTab();
+        } else {
+            $(".needs-feature-metadata").addClass("hidden");
+        }
+
+        // Here we register the stats button to the shearer so that the tree
+        // stats are updated whenever the tree is sheared.
+        var statsButton = document.getElementById("stats-btn");
+        statsButton.shearUpdate = () => {
+          sPanel.populateTreeStats();
+          statsButton.classList.remove("unpopulated");
+        };
+        shearer.registerObserver(shearer);
+        shearer.registerObserver(statsButton);
+        
+
+        // make all tabs collapsable
+        document.querySelectorAll(".collapsible").forEach(function(btn) {
+            btn.addEventListener("click", function() {
+                // Only compute tree stats the first time the user opens up
+                // the tree statistics tab
+                if (
+                    this.id === "stats-btn" &&
+                    this.classList.contains("unpopulated")
+                ) {
+                    sPanel.populateTreeStats();
+                    this.classList.remove("unpopulated");
+                }
+
+                this.classList.toggle("active");
+                this.nextElementSibling.classList.toggle("hidden");
+                document.getElementById("side-panel").classList.toggle(
+                    "panel-active",
+                    document.querySelector(".side-content:not(.hidden)")
+                );
+          });
+        });
+
+        // make side panel visible (this is done after hiding controls so that
+        // the user sees it all appear at once, rather than seeing certain
+        // input-data-dependent controls [e.g. s/f metadata, barplots,
+        // animation] pop in above)
+        document.getElementById("side-panel").classList.remove("hidden");
+
+        document.getElementById("loading-screen").classList.add("hidden");
+
+        
+    });
+  </script>
+</html>

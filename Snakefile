@@ -2,85 +2,82 @@ configfile: "config.yaml"
 import yaml
 import os
 from Bio import SeqIO
+from datetime import datetime
 
 # Extract input file type - nucl or prot
 input_type = config['input_files'][0]['type']
 input_path = config['input_files'][0]['path']
-DB_path = "database/CRASSIFY_DB.dmnd"
-DB_metadata = "database/DB_metadata.csv"
-output_dir = os.path.join(config['output_directory'], 'crassify_out')
+DB_path = config['DB']
+DB_metadata = config['metadata']
+timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+output_dir = os.path.join(config['output_directory'], f'crassify_out_{timestamp}')
+diamond_db_dir = os.path.join(output_dir, 'diamond_db')
 
-print(input_path)
-print(input_type)
+print(f"Using DB: {DB_path}")
+print(f"Using metadata: {DB_metadata}")
 
 # Create output directory
-try:
-    os.makedirs(output_dir, exist_ok=True)
-    print(f"{output_dir} directory created successfully.")
-except Exception as e:
-    print(e)
+os.makedirs(output_dir, exist_ok=True)
+os.makedirs(diamond_db_dir, exist_ok=True)
+print(f"{output_dir} directory created successfully.")
 
+# Validate database
 def validate_target_DB(db_path):
-    if os.path.basename(db_path) == 'ICTV_DB.dmmd':
-        print("Target DB is ICTV_DB.dmmd")
-        return db_path
-    elif db_path.endswith('.dmnd'):
+    if db_path.endswith('.dmnd'):
         print("Target DB is a DIAMOND database file (.dmnd)")
         return db_path
-    elif is_fasta_file(db_path):
+    elif db_path.endswith('.faa') or db_path.endswith('.fasta'):
         return db_path
     else:
-        print("Invalid target DB file type. Must be .dmnd, .faa, or .fasta")
         raise ValueError("Invalid target DB file type. Must be .dmnd, .faa, or .fasta")
 
-# Set target based on input type
-if input_type == "nucleotide":
-    target = os.path.join(output_dir, 'diamond_db/query_proteomes.faa')
-else:
-    target = input_path
+validated_DB = validate_target_DB(DB_path)
+print("Validated DB:", validated_DB)
 
-print(f"Input TYPE is {input_type}.")
-print(f"TARGET {target}.")
+# Dynamically resolve input target
+def get_target_path():
+    if input_type == "nucleotide":
+        return os.path.join(diamond_db_dir, 'query_proteomes.faa')
+    else:
+        return input_path
 
-if input_type == "nucleotide":
-    rule all:
-        input:
-            os.path.join(output_dir, 'diamond_db/query_proteomes.faa'),  # Translation target
-            os.path.join(output_dir, 'diamond_db/matches.tsv'),
-            os.path.join(output_dir, 'dist_matrix_NJ.nwk'),
-            os.path.join(output_dir, "bioempress/tree-viz/")
-else:
-    rule all:
-        input:
-            input_path,  # Protein input
-            os.path.join(output_dir, 'diamond_db/matches.tsv'),
-            os.path.join(output_dir, 'dist_matrix_NJ.nwk'),
-            os.path.join(output_dir, "bioempress/tree-viz/")
+def get_target(wildcards):
+    return get_target_path()
 
-# Translate metagenome if input is nucleotide
+# Master rule
+rule all:
+    input:
+        get_target_path(),
+        os.path.join(diamond_db_dir, 'matches.tsv'),
+        os.path.join(output_dir, 'dist_matrix_NJ.nwk'),
+        os.path.join(output_dir, 'bioempress/tree-viz/')
+
+# Translate nucleotide input to proteins if input is nucleotide
 rule translate_metagenome:
     input:
-        input_file=input_path
+        input_file = input_path
     output:
-        translated_proteomes=os.path.join(output_dir, 'diamond_db/query_proteomes.faa')
+        translated_proteomes = os.path.join(diamond_db_dir, 'query_proteomes.faa')
     shell:
         "prodigal -i {input.input_file} -a {output.translated_proteomes}"
 
-# Rule for DIAMOND BLASTP
+# DIAMOND blastp
 rule run_diamond_blastp:
     input: 
-        query_proteins = target,
-        target_DB = validate_target_DB(DB_path)
+        query_proteins = get_target,
+        target_DB = validated_DB
     output:
-        matches = os.path.join(output_dir, 'diamond_db/matches.tsv')
+        matches = os.path.join(diamond_db_dir, 'matches.tsv')
     shell:
-        "diamond blastp -d {input.target_DB} -q {input.query_proteins} --ultra-sensitive --no-self-hits --max-target-seqs 5 --evalue 0.001 -o {output.matches}"
+        "diamond blastp -d {input.target_DB} -q {input.query_proteins} "
+        "--ultra-sensitive --no-self-hits --max-target-seqs 5 "
+        "--evalue 0.001 -o {output.matches}"
 
 # Rule for crassify
 rule crassify:
     input: 
-        matches = os.path.join(output_dir, 'diamond_db/matches.tsv'),
-        input_proteins = target,
+        matches = os.path.join(diamond_db_dir, 'matches.tsv'),
+        input_proteins = get_target,
         target_DB = DB_path,
         metadata = config['metadata']
     output:

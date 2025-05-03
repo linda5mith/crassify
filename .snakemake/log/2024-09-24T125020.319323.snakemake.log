@@ -1,3 +1,0 @@
-CreateRuleException in file /home/administrator/phd/crassify_v2/Snakefile, line 82:
-The name all is already used by another rule
-  File "/home/administrator/phd/crassify_v2/Snakefile", line 82, in <module>

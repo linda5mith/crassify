@@ -1,3 +1,0 @@
-NameError in file /home/administrator/phd/crassify_v2/Snakefile, line 68:
-name 'proteomes_path' is not defined
-  File "/home/administrator/phd/crassify_v2/Snakefile", line 68, in <module>

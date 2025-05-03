@@ -1,7 +1,0 @@
-The flag 'directory' used in rule all is only valid for outputs, not inputs.
-Building DAG of jobs...
-MissingInputException in rule crassify in file /home/administrator/phd/crassify_v2/Snakefile, line 64:
-Missing input files for rule crassify:
-    output: /home/administrator/phd/crassify_out/feature_metadata.tsv, /home/administrator/phd/crassify_out/phylip.dist
-    affected files:
-        /home/administrator/phd/ICTV_DB/DB_2024/ICTV_metadata.csv

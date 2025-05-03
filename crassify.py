@@ -94,9 +94,6 @@ class GenomeProteomeMapper:
         protein_ID = record.id
         header = record.description
         prot_len = len(record.seq)
-        print(protein_ID)
-        print(header)
-        print('\n')
         if ']' in header:
             definition = re.search(r'\[(.*?)\]', header)
             if definition:
@@ -220,16 +217,19 @@ class ViralPercentageCalculator:
         self.metadata = metadata
         self.output_dir = output_dir
 
+        self.matches.to_csv(os.path.join(self.output_dir, 'matches_%_calculator.csv'))
+        self.metadata.to_csv(os.path.join(self.output_dir, 'metadata_%_calculator.csv'))
+
     @staticmethod
     def most_frequent_virus(series):
         return series.mode().iloc[0] if not series.mode().empty else None
-
+    
     def calculate_percentage_viral(self):
-        total_steps = 4
+        total_steps = 5
         pbar = tqdm(total=total_steps, desc='Calculating % viral for input contigs...')
         
         # 1: Calculate hits per genome
-        hits_per_genome = self.matches.groupby('qseqid_genome_ID')['sseqid_ID'].nunique().reset_index()
+        hits_per_genome = self.matches.groupby('qseqid_genome_ID')['qseqid_ID'].nunique().reset_index()
         hits_per_genome.columns = ['genome_ID', 'protein_hits']
         pbar.update(1)
 
@@ -242,24 +242,44 @@ class ViralPercentageCalculator:
         }).reset_index()
         pbar.update(1)
         
-        # 3: Merge hits_per_genome and aggregated data with metadata
-        merged = pd.merge(self.metadata, hits_per_genome, left_on='genome_ID', right_on='genome_ID', how='left')
+        # 3: Merge hits and aggregates with metadata
+        merged = pd.merge(self.metadata, hits_per_genome, on='genome_ID', how='left')
         merged = pd.merge(merged, aggregated, left_on='genome_ID', right_on='qseqid_genome_ID', how='left')
         merged = merged.drop_duplicates(subset=['genome_ID'], keep='first')
-        
-        # 4: Calculate percentages
+        merged['sseqid_protein_length'] = pd.to_numeric(merged['sseqid_protein_length'], errors='coerce')
+        merged['genome_length'] = pd.to_numeric(merged['genome_length'], errors='coerce')
+
+        # 4: Calculate % viral and % completeness
         merged['% contig viral'] = ((merged['sseqid_protein_length'] * 3) / merged['genome_length'] * 100).round(2).clip(upper=100)
         merged['% contig completeness'] = (merged['genome_length'] / merged['sseqid_genome_length'] * 100).round(2).clip(upper=100)
         pbar.update(1)
-        
-        # 5: Prepare final output
-        merged = merged[['genome_ID', 'genome_length', 'protein_hits', 'sseqid_virus', 'sseqid_genome_length', 'sseqid_protein_length', '% contig viral', '% contig completeness']]\
-            .rename(columns={'sseqid_protein_length': 'total_aln_length','sseqid_virus':'top_species_hit'})\
-            .sort_values(by=['genome_length', '% contig completeness', '% contig viral'], ascending=False)
-        merged = merged[merged.protein_hits.notna()]
-        
-        merged.to_csv(os.path.join(self.output_dir, 'percentage_viral.csv'), index=False)
+
+        # 5: Calculate protein counts and novelty score
+        protein_counts = self.metadata[self.metadata['input_seq'] == 1].groupby('genome_ID')['protein_ID'].nunique().reset_index()
+        protein_counts.columns = ['genome_ID', '#_proteins']
+        merged = pd.merge(merged, protein_counts, on='genome_ID', how='left')
+
+        merged['% proteins aligned'] = (merged['protein_hits'] / merged['#_proteins'] * 100).round(2)
+        merged['novelty_score'] = (
+            100 
+            - merged['% proteins aligned'].fillna(0)
+            - 0.5 * merged['% contig completeness'].fillna(0)
+        ).round(2)
+        merged['is_novel'] = merged['novelty_score'] > 60
         pbar.update(1)
+
+        # Final output
+        merged = merged[['genome_ID', 'genome_length', 'protein_hits', 'sseqid_virus', 'sseqid_genome_length',
+                        'sseqid_protein_length', '% contig viral', '% contig completeness', '#_proteins',
+                        '% proteins aligned', 'novelty_score', 'is_novel']]
+
+        merged = merged.rename(columns={
+            'sseqid_protein_length': 'total_aln_length',
+            'sseqid_virus': 'top_species_hit'
+        })
+
+        merged = merged.sort_values(by=['novelty_score', 'genome_length'], ascending=[False, False])
+        merged.to_csv(os.path.join(self.output_dir, 'percentage_viral.csv'), index=False)
         pbar.close()
         return merged
 
@@ -298,14 +318,9 @@ class VirusDistanceCalculator:
 
         self.matches_df['qseqid_genome_ID'] = self.matches_df['qseqid_genome_ID'].astype(str)
         self.matches_df['sseqid_genome_ID'] = self.matches_df['sseqid_genome_ID'].astype(str)
-
-        # Ensure the pairs are ordered symmetrically
-        self.matches_df['genome_pair'] = self.matches_df.apply(
-            lambda row: tuple(sorted([row['qseqid_genome_ID'], row['sseqid_genome_ID']])),
-            axis=1
-        )
-
-        # Ensure the pairs are ordered symmetrically
+        self.matches_df['original_qseqid_genome_ID'] = self.matches_df['qseqid_genome_ID']
+        self.matches_df['original_sseqid_genome_ID'] = self.matches_df['sseqid_genome_ID']
+        
         self.matches_df['genome_pair'] = self.matches_df.apply(
             lambda row: tuple(sorted([row['qseqid_genome_ID'], row['sseqid_genome_ID']])),
             axis=1
@@ -314,31 +329,34 @@ class VirusDistanceCalculator:
         # Group by the symmetrical pairs and aggregate data
         df = self.matches_df.groupby('genome_pair').agg({
             'conserved_AA_#': 'sum', 
-            'qseqid_genome_length': 'first',  # could also use max/min if lengths are different
-            'sseqid_genome_length': 'first',  # same as above
-            'qseqid_input_seq': 'first',      # or consider concatenating/combining as needed
-            'sseqid_input_seq': 'first',      # same as above
+            'qseqid_genome_length': 'first',  
+            'sseqid_genome_length': 'first',
+            'qseqid_input_seq': 'first',     
+            'sseqid_input_seq': 'first',      
             'sseqid_virus': 'first',
             'length': 'sum',
-            'pident': 'sum'
+            'pident': 'sum',
+            'original_qseqid_genome_ID': 'first',  
+            'original_sseqid_genome_ID': 'first'  
         }).reset_index()
 
-        # Remove self-hits (where both elements of the pair are identical)
+        # Remove self-hits
         df = df[df['genome_pair'].apply(lambda x: x[0] != x[1])]
         
         # Calculate average genome length
         df['avg_genome_length'] = (df['qseqid_genome_length'] + df['sseqid_genome_length']) / 2
         
         # Calculate symmetric distance
-        df['distance'] = 1 - (df['conserved_AA_#'] * 3) / df['avg_genome_length']
-        df['distance'] = df['distance'].abs().round(6)
+        df['distance'] = (1 - (df['conserved_AA_#'] * 3) / df['avg_genome_length']).round(6)
+        df['conserved_AA_#'] = df['conserved_AA_#'].abs().round(2)
         
         df[['qseqid_genome_ID', 'sseqid_genome_ID']] = pd.DataFrame(df['genome_pair'].tolist(), index=df.index)
         
         df = df.drop(columns=['genome_pair'])
-        df = df[['qseqid_genome_ID', 'sseqid_genome_ID', 'distance'] + [col for col in df.columns if col not in ['qseqid_genome_ID', 'sseqid_genome_ID', 'distance']]]
-        
-        self.distances_df = df.sort_values(by=['qseqid_genome_ID', 'distance'])
+
+        df = df.sort_values(by=['qseqid_genome_ID', 'distance'])
+
+        self.distances_df = df
         output_file = os.path.join(out_dir, 'distances.csv')
         self.distances_df.to_csv(output_file, index=False)
         return self.distances_df
@@ -350,20 +368,18 @@ class VirusDistanceCalculator:
         :param top_n: Number of top hits to retain for each genome.
         :return: Filtered DataFrame with top hits.
         """
-        # Ensure distances have been computed
+
         if not hasattr(self, 'distances_df'):
             raise ValueError("Distances have not been computed. Please run compute_distances() first.")
         
-        # Filter percentage_viral
         self.filter_viruses()
 
-        # Get top N hits based on minimum distance
         top_hits = self.distances_df.groupby('qseqid_genome_ID').head(top_n)
         
-        # Merge with filtered viruses to keep only the ones meeting the criteria
         self.top_hits_filtered = pd.merge(top_hits, self.filtered_viruses, 
                                           left_on='sseqid_genome_ID', 
                                           right_on='genome_ID')
+        
         self.top_hits_filtered.to_csv(os.path.join(self.out_dir, 'top_hits_viruses.csv'), index=False)
         return self.top_hits_filtered
 
@@ -373,14 +389,13 @@ class VirusDistanceCalculator:
         
         :return: String representation of the PHYLIP table.
         """
-        # Ensure top hits have been filtered
+
         if not hasattr(self, 'top_hits_filtered'):
             raise ValueError("Top hits have not been filtered. Please run get_top_hits() first.")
         
         total_steps = 4
         pbar = tqdm(total=total_steps, desc='Converting distance matrix to PHYLIP')
 
-        # Pivot the DataFrame to create a distance matrix
         matrix = self.distances_df.pivot_table(
             columns='qseqid_genome_ID', 
             index='sseqid_genome_ID', 
@@ -412,12 +427,10 @@ class VirusDistanceCalculator:
         matrix.index = matrix.index.str.replace(r'\,|\(|\)|\:', '_', regex=True)
         pbar.update(1)
         
-        # Ensure taxon names are not longer than 64 characters
         matrix.index = matrix.index.str[:64]
         np.fill_diagonal(matrix.values, 0)
         matrix = matrix.fillna(1).astype(float).round(5).clip(lower=0)
         
-        # Save the matrix to a PHYLIP file
         phylip_file = os.path.join(self.out_dir, 'phylip.dist')
         matrix.to_csv(phylip_file, header=True, index=True, sep=' ')
         
@@ -425,14 +438,6 @@ class VirusDistanceCalculator:
         pbar.close()
         print('PHYLIP file saved successfully.')
         return phylip_file
-
-
-# Tomorrow:
-# filter distances based on completeness estimation
-# return top n hits for complete-ish contigs
-# decenttree rule
-# bioempress tree 
-# assert tests
 
 
 def parse_arguments():

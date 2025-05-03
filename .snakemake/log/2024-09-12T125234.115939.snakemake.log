@@ -1,6 +1,0 @@
-The flag 'directory' used in rule all is only valid for outputs, not inputs.
-Building DAG of jobs...
-MissingInputException in rule all in file /home/administrator/phd/crassify_v2/Snakefile, line 38:
-Missing input files for rule all:
-    affected files:
-        /home/administrator/phd/crassify_out/crassify/tree-viz
