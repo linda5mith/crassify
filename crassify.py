@@ -10,20 +10,22 @@ from tqdm import tqdm
 from rich.console import Console
 from rich.markdown import Markdown
 from datetime import datetime
+import difflib
 
 class CircularityChecker:
     @staticmethod
-    def find_circular_overlap(sequence, min_overlap=10, max_overlap=500):
+    def find_circular_overlap(seq, min_overlap=100, max_overlap=1000, match_threshold=0.9):
         """
-        Check for circularity by finding overlap between the start and end of the sequence.
+        Detects potential circularity in a nucleotide sequence by checking
+        similarity between the start and end regions.
         """
-        for overlap_length in range(min_overlap, max_overlap + 1):
-            start = sequence[:overlap_length]
-            end = sequence[-overlap_length:]
-            if start == end:
-                return overlap_length
+        for overlap in range(max_overlap, min_overlap - 1, -1):
+            start = seq[:overlap]
+            end = seq[-overlap:]
+            similarity = difflib.SequenceMatcher(None, start, end).ratio()
+            if similarity >= match_threshold:
+                return overlap
         return None
-
 
 class GenomeProteomeMapper:
     def __init__(self, path_to_prots, output_dir):

@@ -1,8 +1,9 @@
+name: crassify
 channels:
   - conda-forge
   - bioconda
 dependencies:
-  - snakemake-minimal >=7.3
+  - snakemake-minimal[version='>=7.3']
   - diamond==2.1.8
   - conda-forge::python=3.10
   - conda-forge::pip
@@ -16,5 +17,3 @@ dependencies:
     - empress==1.2.0
     - rich==13.5.2
     - openpyxl
-
-# need to add tqdm
