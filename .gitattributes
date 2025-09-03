@@ -1,1 +1,2 @@
 database/CRASSIFY_DB.dmnd filter=lfs diff=lfs merge=lfs -text
+*.dmnd filter=lfs diff=lfs merge=lfs -text
