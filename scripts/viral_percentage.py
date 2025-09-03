@@ -96,7 +96,7 @@ class ViralPercentageCalculator:
             "% contig completeness", "#_proteins", "% proteins aligned",
             "novelty_score", "is_novel"
         ]]
-        out = out.round(3)
+        out = out.round(3).sort_values(by=['protein_hits','% contig completeness'],ascending=False)
         out.to_csv(f"{self.output_dir}/percentage_viral.csv", index=False)
         pbar.close()
         return out
