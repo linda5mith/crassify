@@ -1,0 +1,46 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job stats:
+job                     count
+--------------------  -------
+all                         1
+check_circularity           1
+crassify                    1
+decenttree                  1
+dendogram                   1
+run_diamond_blastp          1
+translate_metagenome        1
+total                       7
+
+Select jobs to execute...
+
+[Sun Aug 31 17:18:17 2025]
+rule translate_metagenome:
+    input: /home/administrator/phd/soil_2025/combined_easy_cluster_min_seq_id_0.95_rep_seq.phages_combined.fna
+    output: /home/administrator/phd/crassify_out_2025-08-31/diamond_db/query_proteomes.faa
+    jobid: 1
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-08-31/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+
+[Sun Aug 31 17:18:17 2025]
+rule check_circularity:
+    input: /home/administrator/phd/soil_2025/combined_easy_cluster_min_seq_id_0.95_rep_seq.phages_combined.fna
+    output: /home/administrator/phd/crassify_out_2025-08-31/circularity_report.txt
+    jobid: 6
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-08-31/circularity_report.txt
+    resources: tmpdir=/tmp
+
+Terminating processes on user request, this might take some time.
+[Sun Aug 31 17:18:20 2025]
+Error in rule translate_metagenome:
+    jobid: 1
+    input: /home/administrator/phd/soil_2025/combined_easy_cluster_min_seq_id_0.95_rep_seq.phages_combined.fna
+    output: /home/administrator/phd/crassify_out_2025-08-31/diamond_db/query_proteomes.faa
+    shell:
+        prodigal -i /home/administrator/phd/soil_2025/combined_easy_cluster_min_seq_id_0.95_rep_seq.phages_combined.fna -a /home/administrator/phd/crassify_out_2025-08-31/diamond_db/query_proteomes.faa
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+Cancelling snakemake on user request.

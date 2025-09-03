@@ -1,0 +1,62 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job                     count
+--------------------  -------
+all                         1
+crassify                    1
+run_diamond_blastp          1
+translate_metagenome        1
+visualize                   1
+total                       5
+
+Select jobs to execute...
+
+[Mon Sep  1 21:36:09 2025]
+rule translate_metagenome:
+    input: /home/administrator/phd/soil_2025/combined_easy_cluster_min_seq_id_0.95_rep_seq.phages_combined.fna
+    output: /home/administrator/phd/diamond_db/query_proteomes.faa
+    jobid: 4
+    reason: Missing output files: /home/administrator/phd/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+[Mon Sep  1 21:36:54 2025]
+Finished job 4.
+1 of 5 steps (20%) done
+Select jobs to execute...
+
+[Mon Sep  1 21:36:54 2025]
+rule run_diamond_blastp:
+    input: /home/administrator/phd/diamond_db/query_proteomes.faa, data/CRASSIFY_DB.dmnd
+    output: /home/administrator/phd/diamond_db/matches.tsv
+    jobid: 3
+    reason: Missing output files: /home/administrator/phd/diamond_db/matches.tsv; Input files updated by another job: /home/administrator/phd/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+[Mon Sep  1 21:40:02 2025]
+Finished job 3.
+2 of 5 steps (40%) done
+Select jobs to execute...
+
+[Mon Sep  1 21:40:02 2025]
+rule crassify:
+    input: /home/administrator/phd/diamond_db/matches.tsv, /home/administrator/phd/diamond_db/query_proteomes.faa, data/ICTV_metadata_2025.csv
+    output: /home/administrator/phd/percentage_viral.csv, /home/administrator/phd/feature_metadata.tsv, /home/administrator/phd/phylip.dist
+    jobid: 2
+    reason: Missing output files: /home/administrator/phd/percentage_viral.csv; Input files updated by another job: /home/administrator/phd/diamond_db/matches.tsv, /home/administrator/phd/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+[Mon Sep  1 21:40:02 2025]
+Error in rule crassify:
+    jobid: 2
+    input: /home/administrator/phd/diamond_db/matches.tsv, /home/administrator/phd/diamond_db/query_proteomes.faa, data/ICTV_metadata_2025.csv
+    output: /home/administrator/phd/percentage_viral.csv, /home/administrator/phd/feature_metadata.tsv, /home/administrator/phd/phylip.dist
+    shell:
+        python scripts/crassify.py -p /home/administrator/phd/diamond_db/query_proteomes.faa -m /home/administrator/phd/diamond_db/matches.tsv --metadata data/ICTV_metadata_2025.csv -o /home/administrator/phd/
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: .snakemake/log/2025-09-01T213609.250541.snakemake.log

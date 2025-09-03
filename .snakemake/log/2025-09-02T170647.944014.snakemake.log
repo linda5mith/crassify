@@ -1,0 +1,25 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job                   count
+------------------  -------
+all                       1
+crassify                  1
+run_diamond_blastp        1
+visualize                 1
+total                     4
+
+Select jobs to execute...
+
+[Tue Sep  2 17:06:48 2025]
+rule run_diamond_blastp:
+    input: /home/administrator/phd/crassify_out_2025-09-02/diamond_db/query_proteomes.faa, /home/administrator/phd/ICTV_DB/DB_2024/ICTV_proteomes_2025.dmnd
+    output: /home/administrator/phd/crassify_out_2025-09-02/diamond_db/matches.tsv
+    jobid: 3
+    reason: Code has changed since last execution
+    resources: tmpdir=/tmp
+
+Terminating processes on user request, this might take some time.
+Cancelling snakemake on user request.

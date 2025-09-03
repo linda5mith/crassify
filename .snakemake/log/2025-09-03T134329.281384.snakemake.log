@@ -1,0 +1,24 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job          count
+---------  -------
+all              1
+visualize        1
+total            2
+
+Select jobs to execute...
+
+[Wed Sep  3 13:43:29 2025]
+rule visualize:
+    input: /home/administrator/phd/crassify_out_2025-09-03/percentage_viral.csv
+    output: /home/administrator/phd/crassify_out_2025-09-03/crassify_summary.pdf
+    jobid: 1
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-09-03/crassify_summary.pdf
+    resources: tmpdir=/tmp
+
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: .snakemake/log/2025-09-03T134329.281384.snakemake.log

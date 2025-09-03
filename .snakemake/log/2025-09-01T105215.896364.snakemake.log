@@ -1,0 +1,75 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job stats:
+job                     count
+--------------------  -------
+all                         1
+crassify                    1
+decenttree                  1
+dendogram                   1
+run_diamond_blastp          1
+translate_metagenome        1
+total                       6
+
+Select jobs to execute...
+
+[Mon Sep  1 10:52:16 2025]
+rule translate_metagenome:
+    input: /home/administrator/phd/soil_2025/combined_easy_cluster_min_seq_id_0.95_rep_seq.phages_combined.fna
+    output: /home/administrator/phd/crassify_out_2025-09-01/diamond_db/query_proteomes.faa
+    jobid: 1
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-09-01/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+[Mon Sep  1 10:53:01 2025]
+Finished job 1.
+1 of 6 steps (17%) done
+Select jobs to execute...
+
+[Mon Sep  1 10:53:01 2025]
+rule run_diamond_blastp:
+    input: /home/administrator/phd/crassify_out_2025-09-01/diamond_db/query_proteomes.faa, /home/administrator/phd/ICTV_DB/DB_2024/CRASSIFY_DB.dmnd
+    output: /home/administrator/phd/crassify_out_2025-09-01/diamond_db/matches.tsv
+    jobid: 2
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-09-01/diamond_db/matches.tsv; Input files updated by another job: /home/administrator/phd/crassify_out_2025-09-01/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+[Mon Sep  1 10:56:17 2025]
+Finished job 2.
+2 of 6 steps (33%) done
+Select jobs to execute...
+
+[Mon Sep  1 10:56:17 2025]
+rule crassify:
+    input: /home/administrator/phd/crassify_out_2025-09-01/diamond_db/matches.tsv, /home/administrator/phd/crassify_out_2025-09-01/diamond_db/query_proteomes.faa, /home/administrator/phd/ICTV_DB/DB_2024/CRASSIFY_DB.dmnd, /home/administrator/phd/ICTV_DB/DB_2024/ICTV_metadata_2025.csv
+    output: /home/administrator/phd/crassify_out_2025-09-01/feature_metadata.tsv, /home/administrator/phd/crassify_out_2025-09-01/phylip.dist
+    jobid: 4
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-09-01/phylip.dist, /home/administrator/phd/crassify_out_2025-09-01/feature_metadata.tsv; Input files updated by another job: /home/administrator/phd/crassify_out_2025-09-01/diamond_db/matches.tsv, /home/administrator/phd/crassify_out_2025-09-01/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+[Mon Sep  1 10:59:24 2025]
+Finished job 4.
+3 of 6 steps (50%) done
+Select jobs to execute...
+
+[Mon Sep  1 10:59:24 2025]
+rule decenttree:
+    input: /home/administrator/phd/crassify_out_2025-09-01/phylip.dist
+    output: /home/administrator/phd/crassify_out_2025-09-01/dist_matrix_NJ.nwk
+    jobid: 3
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-09-01/dist_matrix_NJ.nwk; Input files updated by another job: /home/administrator/phd/crassify_out_2025-09-01/phylip.dist
+    resources: tmpdir=/tmp
+
+Terminating processes on user request, this might take some time.
+[Mon Sep  1 11:05:34 2025]
+Error in rule decenttree:
+    jobid: 3
+    input: /home/administrator/phd/crassify_out_2025-09-01/phylip.dist
+    output: /home/administrator/phd/crassify_out_2025-09-01/dist_matrix_NJ.nwk
+    shell:
+        /home/administrator/programs/decenttree/build/decenttree -in /home/administrator/phd/crassify_out_2025-09-01/phylip.dist -t NJ -nt 10 -out /home/administrator/phd/crassify_out_2025-09-01/dist_matrix_NJ.nwk
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+Complete log: .snakemake/log/2025-09-01T105215.896364.snakemake.log

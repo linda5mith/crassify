@@ -1,0 +1,39 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job                     count
+--------------------  -------
+all                         1
+crassify                    1
+run_diamond_blastp          1
+translate_metagenome        1
+visualize                   1
+total                       5
+
+Select jobs to execute...
+
+[Tue Sep  2 17:14:08 2025]
+rule translate_metagenome:
+    input: /home/administrator/phd/soil_2025/combined_easy_cluster_min_seq_id_0.95_rep_seq.phages_combined.fna
+    output: /home/administrator/phd/crassify_out_2025-09-02/diamond_db/query_proteomes.faa
+    jobid: 4
+    reason: Code has changed since last execution
+    resources: tmpdir=/tmp
+
+[Tue Sep  2 17:17:07 2025]
+Finished job 4.
+1 of 5 steps (20%) done
+Select jobs to execute...
+
+[Tue Sep  2 17:17:07 2025]
+rule run_diamond_blastp:
+    input: /home/administrator/phd/crassify_out_2025-09-02/diamond_db/query_proteomes.faa, /home/administrator/phd/ICTV_DB/DB_2024/ICTV_proteomes_2025.dmnd
+    output: /home/administrator/phd/crassify_out_2025-09-02/diamond_db/matches.tsv
+    jobid: 3
+    reason: Input files updated by another job: /home/administrator/phd/crassify_out_2025-09-02/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+Terminating processes on user request, this might take some time.
+Cancelling snakemake on user request.

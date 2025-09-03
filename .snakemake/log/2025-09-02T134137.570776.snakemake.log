@@ -1,0 +1,36 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job          count
+---------  -------
+all              1
+crassify         1
+visualize        1
+total            3
+
+Select jobs to execute...
+
+[Tue Sep  2 13:41:37 2025]
+rule crassify:
+    input: /home/administrator/phd/diamond_db/matches.tsv, /home/administrator/phd/diamond_db/query_proteomes.faa, data/ICTV_metadata_2025.csv
+    output: /home/administrator/phd/percentage_viral.csv, /home/administrator/phd/feature_metadata.tsv
+    jobid: 2
+    reason: Missing output files: /home/administrator/phd/percentage_viral.csv
+    resources: tmpdir=/tmp
+
+[Tue Sep  2 13:41:46 2025]
+Error in rule crassify:
+    jobid: 2
+    input: /home/administrator/phd/diamond_db/matches.tsv, /home/administrator/phd/diamond_db/query_proteomes.faa, data/ICTV_metadata_2025.csv
+    output: /home/administrator/phd/percentage_viral.csv, /home/administrator/phd/feature_metadata.tsv
+    shell:
+        python scripts/cli.py -p /home/administrator/phd/diamond_db/query_proteomes.faa -m /home/administrator/phd/diamond_db/matches.tsv --metadata data/ICTV_metadata_2025.csv -o /home/administrator/phd/
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+Removing output files of failed job crassify since they might be corrupted:
+/home/administrator/phd/percentage_viral.csv
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: .snakemake/log/2025-09-02T134137.570776.snakemake.log

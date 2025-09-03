@@ -1,0 +1,51 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job          count
+---------  -------
+all              1
+crassify         1
+visualize        1
+total            3
+
+Select jobs to execute...
+
+[Wed Sep  3 15:02:32 2025]
+rule crassify:
+    input: /home/administrator/phd/crassify_out_2025-09-03/diamond_db/matches.tsv, /home/administrator/phd/crassify_out_2025-09-03/diamond_db/query_proteomes.faa, data/crassify_metadata.csv
+    output: /home/administrator/phd/crassify_out_2025-09-03/percentage_viral.csv
+    jobid: 2
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-09-03/percentage_viral.csv
+    resources: tmpdir=/tmp
+
+[Wed Sep  3 15:02:36 2025]
+Finished job 2.
+1 of 3 steps (33%) done
+Select jobs to execute...
+
+[Wed Sep  3 15:02:36 2025]
+rule visualize:
+    input: /home/administrator/phd/crassify_out_2025-09-03/percentage_viral.csv
+    output: /home/administrator/phd/crassify_out_2025-09-03/crassify_summary.pdf
+    jobid: 1
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-09-03/crassify_summary.pdf; Input files updated by another job: /home/administrator/phd/crassify_out_2025-09-03/percentage_viral.csv
+    resources: tmpdir=/tmp
+
+[Wed Sep  3 15:02:41 2025]
+Finished job 1.
+2 of 3 steps (67%) done
+Select jobs to execute...
+
+[Wed Sep  3 15:02:41 2025]
+localrule all:
+    input: /home/administrator/phd/crassify_out_2025-09-03/crassify_summary.pdf
+    jobid: 0
+    reason: Input files updated by another job: /home/administrator/phd/crassify_out_2025-09-03/crassify_summary.pdf
+    resources: tmpdir=/tmp
+
+[Wed Sep  3 15:02:41 2025]
+Finished job 0.
+3 of 3 steps (100%) done
+Complete log: .snakemake/log/2025-09-03T150231.687149.snakemake.log

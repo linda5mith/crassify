@@ -1,0 +1,35 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job                   count
+------------------  -------
+all                       1
+crassify                  1
+run_diamond_blastp        1
+visualize                 1
+total                     4
+
+Select jobs to execute...
+
+[Tue Sep  2 17:24:43 2025]
+rule run_diamond_blastp:
+    input: /home/administrator/phd/crassify_out_2025-09-02/diamond_db/query_proteomes.faa, /home/administrator/phd/ICTV_DB/DB_2024/ICTV_proteomes_2025.dmnd
+    output: /home/administrator/phd/crassify_out_2025-09-02/diamond_db/matches.tsv
+    jobid: 3
+    reason: Forced execution
+    resources: tmpdir=/tmp
+
+[Tue Sep  2 17:24:43 2025]
+Error in rule run_diamond_blastp:
+    jobid: 3
+    input: /home/administrator/phd/crassify_out_2025-09-02/diamond_db/query_proteomes.faa, /home/administrator/phd/ICTV_DB/DB_2024/ICTV_proteomes_2025.dmnd
+    output: /home/administrator/phd/crassify_out_2025-09-02/diamond_db/matches.tsv
+    shell:
+        diamond blastp -d /home/administrator/phd/ICTV_DB/DB_2024/ICTV_proteomes_2025.dmnd -q /home/administrator/phd/crassify_out_2025-09-02/diamond_db/query_proteomes.faa --ultra-sensitive --no-self-hits --max-target-seqs 1--evalue 0.01 -o /home/administrator/phd/crassify_out_2025-09-02/diamond_db/matches.tsv
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: .snakemake/log/2025-09-02T172442.897134.snakemake.log

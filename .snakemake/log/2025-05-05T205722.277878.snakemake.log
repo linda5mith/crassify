@@ -1,0 +1,106 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job stats:
+job                     count
+--------------------  -------
+all                         1
+check_circularity           1
+crassify                    1
+decenttree                  1
+dendogram                   1
+run_diamond_blastp          1
+translate_metagenome        1
+total                       7
+
+Select jobs to execute...
+
+[Mon May  5 20:57:22 2025]
+rule translate_metagenome:
+    input: /home/administrator/phd/soil/irish_soil_LVD_magvirus_pooled/irish_phage_contigs.fasta
+    output: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/query_proteomes.faa
+    jobid: 1
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+
+[Mon May  5 20:57:22 2025]
+rule check_circularity:
+    input: /home/administrator/phd/soil/irish_soil_LVD_magvirus_pooled/irish_phage_contigs.fasta
+    output: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/circularity_report.txt
+    jobid: 6
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/circularity_report.txt
+    resources: tmpdir=/tmp
+
+[Mon May  5 20:57:42 2025]
+Finished job 1.
+1 of 7 steps (14%) done
+Select jobs to execute...
+
+[Mon May  5 20:57:42 2025]
+rule run_diamond_blastp:
+    input: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/query_proteomes.faa, /home/administrator/phd/ICTV_DB/DB_2024/CRASSIFY_DB.dmnd
+    output: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/matches.tsv
+    jobid: 2
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/matches.tsv; Input files updated by another job: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/query_proteomes.faa
+    resources: tmpdir=/tmp
+
+[Mon May  5 21:00:31 2025]
+Finished job 2.
+2 of 7 steps (29%) done
+Select jobs to execute...
+
+[Mon May  5 21:00:31 2025]
+rule crassify:
+    input: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/matches.tsv, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/query_proteomes.faa, /home/administrator/phd/ICTV_DB/DB_2024/CRASSIFY_DB.dmnd, /home/administrator/phd/ICTV_DB/DB_2024/ICTV_metadata.csv
+    output: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/feature_metadata.tsv, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/phylip.dist
+    jobid: 4
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/phylip.dist, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/feature_metadata.tsv; Input files updated by another job: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/query_proteomes.faa, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/matches.tsv
+    resources: tmpdir=/tmp
+
+[Mon May  5 21:00:54 2025]
+Finished job 4.
+3 of 7 steps (43%) done
+Select jobs to execute...
+
+[Mon May  5 21:00:54 2025]
+rule decenttree:
+    input: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/phylip.dist
+    output: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/dist_matrix_NJ.nwk
+    jobid: 3
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/dist_matrix_NJ.nwk; Input files updated by another job: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/phylip.dist
+    resources: tmpdir=/tmp
+
+[Mon May  5 21:01:32 2025]
+Finished job 3.
+4 of 7 steps (57%) done
+Select jobs to execute...
+
+[Mon May  5 21:01:32 2025]
+rule dendogram:
+    input: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/dist_matrix_NJ.nwk, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/feature_metadata.tsv
+    output: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/bioempress/tree-viz
+    jobid: 5
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/bioempress/tree-viz; Input files updated by another job: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/dist_matrix_NJ.nwk, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/feature_metadata.tsv
+    resources: tmpdir=/tmp
+
+[Mon May  5 21:01:34 2025]
+Finished job 5.
+5 of 7 steps (71%) done
+[Mon May  5 21:08:16 2025]
+Finished job 6.
+6 of 7 steps (86%) done
+Select jobs to execute...
+
+[Mon May  5 21:08:16 2025]
+localrule all:
+    input: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/query_proteomes.faa, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/matches.tsv, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/dist_matrix_NJ.nwk, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/bioempress/tree-viz, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/circularity_report.txt
+    jobid: 0
+    reason: Input files updated by another job: /home/administrator/phd/crassify_out_2025-05-05_20-57-22/bioempress/tree-viz, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/circularity_report.txt, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/dist_matrix_NJ.nwk, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/query_proteomes.faa, /home/administrator/phd/crassify_out_2025-05-05_20-57-22/diamond_db/matches.tsv
+    resources: tmpdir=/tmp
+
+[Mon May  5 21:08:16 2025]
+Finished job 0.
+7 of 7 steps (100%) done
+Complete log: .snakemake/log/2025-05-05T205722.277878.snakemake.log

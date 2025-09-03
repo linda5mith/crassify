@@ -1,0 +1,31 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job          count
+---------  -------
+all              1
+crassify         1
+visualize        1
+total            3
+
+Select jobs to execute...
+
+[Tue Sep  2 14:57:40 2025]
+rule crassify:
+    input: /home/administrator/phd/crassify_out_2025-09-02/diamond_db/matches.tsv, /home/administrator/phd/crassify_out_2025-09-02/diamond_db/query_proteomes.faa, data/ICTV_metadata_2025.csv
+    output: /home/administrator/phd/crassify_out_2025-09-02/percentage_viral.csv, /home/administrator/phd/crassify_out_2025-09-02/feature_metadata.tsv
+    jobid: 2
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-09-02/percentage_viral.csv
+    resources: tmpdir=/tmp
+
+Waiting at most 5 seconds for missing files.
+MissingOutputException in rule crassify in file /home/administrator/phd/crassify_v2/Snakefile, line 34:
+Job 2  completed successfully, but some output files are missing. Missing files after 5 seconds. This might be due to filesystem latency. If that is the case, consider to increase the wait time with --latency-wait:
+/home/administrator/phd/crassify_out_2025-09-02/feature_metadata.tsv
+Removing output files of failed job crassify since they might be corrupted:
+/home/administrator/phd/crassify_out_2025-09-02/percentage_viral.csv
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: .snakemake/log/2025-09-02T145740.570678.snakemake.log
