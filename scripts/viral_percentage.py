@@ -47,7 +47,7 @@ class ViralPercentageCalculator:
             ["qseqid_genome_ID", "sseqid_genome_ID", "subject_virus", "sseqid_genome_length", "total_aln_length"]
         ].rename(columns={
             "qseqid_genome_ID": "genome_ID",
-            "sseqid_genome_ID": "best_subject_ID",
+            "sseqid_genome_ID": "top_species_hit_genome_accn",
             "subject_virus": "top_species_hit"
         })
         pbar.update(1)
@@ -89,9 +89,11 @@ class ViralPercentageCalculator:
         merged["is_novel"] = merged["novelty_score"] > 60
         pbar.update(2)
 
+        print(merged.columns)
+
         # 6. Final output
         out = merged[[
-            "genome_ID", "genome_length", "protein_hits", "top_species_hit",
+            "genome_ID", "genome_length", "protein_hits", "top_species_hit","top_species_hit_genome_accn",
             "sseqid_genome_length", "total_aln_length", "% contig viral",
             "% contig completeness", "#_proteins", "% proteins aligned",
             "novelty_score", "is_novel"

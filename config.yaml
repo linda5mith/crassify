@@ -21,24 +21,3 @@ steps:
   decenttree: false
   dendogram: false
   visualize: true
-
-
-
-# # Specify path to DB
-# DB: "/home/administrator/phd/ICTV_DB/DB_2024/CRASSIFY_DB.dmnd"
-
-# # Specify path to your input file
-# input:
-#   - path: "/home/administrator/phd/soil_2025/combined_easy_cluster_min_seq_id_0.95_rep_seq.phages_combined.fna"
-#   # - path: "/home/administrator/phd/soil/irish_soil_LVD_magvirus_pooled/irish_phage_contigs.fasta" 
-#     type: "nucleotide"  # or "protein"
-
-# # Specify path to your target DB proteome metadata (default is crassify metadata)
-# metadata: "/home/administrator/phd/ICTV_DB/DB_2024/ICTV_metadata_2025.csv"
-
-# output_directory: "/home/administrator/phd/"
-
-# # Path to decenttree installation
-# decenttree: "/home/administrator/programs/decenttree/build/decenttree"
-
-
