@@ -13,6 +13,7 @@ dependencies:
   - pandas==2.0.1
   - biopython==1.81
   - prodigal
+  - cython
   - pip:
     - empress==1.2.0
     - rich==13.5.2

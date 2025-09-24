@@ -13,7 +13,16 @@
 
 Crassify uses **DIAMOND** to align input proteomes against a curated reference database of 14,329 ICTV-classified viral genomes.
 
----
+## Installation
+
+### Using Conda/Mamba and `environment.yml`
+
+```bash
+git clone https://github.com/linda5mith/crassify.git
+cd crassify/
+mamba env create -f environment.yml
+mamba activate crassify
+```
 
 ## Features
 
@@ -41,16 +50,6 @@ Crassify takes either:
 ---
 
 
-## 🛠 Installation
-
-### Using Conda/Mamba and `environment.yml`
-
-```bash
-git clone https://github.com/linda5mith/crassify.git .
-cd crassify
-mamba env create -f environment.yml
-mamba activate crassify
-```
 
 ## Running Crassify with Snakemake
 

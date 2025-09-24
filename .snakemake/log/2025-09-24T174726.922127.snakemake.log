@@ -1,0 +1,23 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job                   count
+------------------  -------
+all                       1
+crassify                  1
+run_diamond_blastp        1
+visualize                 1
+total                     4
+
+Select jobs to execute...
+
+[Wed Sep 24 17:47:27 2025]
+rule run_diamond_blastp:
+    input: /home/administrator/phd/crassify_out_2025-09-24/diamond_db/query_proteomes.faa, data/crassify_DB_2025.dmnd
+    output: /home/administrator/phd/crassify_out_2025-09-24/diamond_db/matches.tsv
+    jobid: 3
+    reason: Forced execution
+    resources: tmpdir=/tmp
+
