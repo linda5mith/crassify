@@ -15,40 +15,70 @@ Crassify uses **DIAMOND** to align input proteomes against a curated reference d
 
 ## Installation
 
-### Using Conda/Mamba and `environment.yml`
+### Clone the repo and install dependencies:
 
 ```bash
 git clone https://github.com/linda5mith/crassify.git
 cd crassify/
 mamba env create -f environment.yml
 mamba activate crassify
+# Install Crassify as a CLI command:
+pip install -e .
 ```
 
 ### Test installation
-
-Once you have setup and activated the crassify environment you can test the installation by running:
-
 ```bash
-snakemake -j 8
+crassify -i sample_data/test_phages_nucl/pooled_test_phages.fna -o ~/crassify_test
 ```
-The default config.yml is set up to run on the test data e.g:
 
+## 📄 Output
 
-### Config.yml
+Crassify produces several output files:  
 
-## Features
+- **`percentage_viral.csv`** — per-genome summary of viral content, completeness, and novelty.  
+- **`distances.csv`** — pairwise inter-genome distances and similarity metrics.  
+- **`crassify_summary.png`** — quick visualization of input genomes and viral content.  
 
-- Fast, DIAMOND-based alignment of input proteins to reference DB
-- Computes:
-  - `% contig viral` — proportion of viral-matching content
-  - `% contig completeness` — relative to closest known virus
-  - `% proteins aligned` — how much of your proteome was matched
-  - Novelty score — penalizes low alignment and completeness
-- Detects circularity based on protein start/end overlaps
-- Outputs:
-  - Pairwise distance matrices
-  - PHYLIP-formatted distance tables
-  - Tree visualization support via [Empress](https://github.com/biocore/empress)
+---
+
+### `percentage_viral.csv`
+
+| Column | Description |
+|--------|-------------|
+| `genome_ID` | Accession or identifier of the query genome/contig |
+| `genome_length` | Total nucleotide length of the query genome |
+| `protein_hits` | Number of proteins with at least one significant match |
+| `top_species_hit` | Best-matching reference virus species |
+| `top_species_hit_genome_accn` | Accession of the top reference genome |
+| `sseqid_genome_length` | Length of the best-matching reference genome |
+| `total_aln_length` | Summed alignment length across all proteins |
+| `% contig viral` | Fraction of query genome aligning to viral proteins |
+| `% contig completeness` | Completeness relative to the top reference genome |
+| `#_proteins` | Number of predicted proteins in the query genome |
+| `% proteins aligned` | Percentage of proteins with hits in the reference DB |
+| `novelty_score` | Higher = more novel (penalizes low alignment/completeness) |
+| `is_novel` | Boolean flag (True if `novelty_score > 60`) |
+
+---
+
+### `distances.csv`
+
+| Column | Description |
+|--------|-------------|
+| `qseqid_genome_ID` | Query genome accession/ID |
+| `sseqid_genome_ID` | Reference genome accession/ID |
+| `sseqid_virus` | Virus name of the reference genome |
+| `distance` | Inter-genome distance (lower = more similar) |
+| `total_aln_length` | Summed amino acid alignment length |
+| `avg_pid` | Average % identity across alignments |
+| `avg_genome_length` | Average length of query and reference genomes |
+| `qseqid_genome_length` | Query genome length |
+| `sseqid_genome_length` | Reference genome length |
+
+---
+
+Example visualization:  
+![Crassify Output](images/crassify_soil_contigs_metadata.png)
 
 ---
 
@@ -58,61 +88,17 @@ Crassify takes either:
 - **Nucleotide sequences** (that get translated), or
 - **Protein FASTA files** (`.faa`)  
   (All proteins for a given genome should be supplied together)
-
 ---
 
-
-
-## Running Crassify with Snakemake
-
-After downloading the Crassify reference database, update the paths in your config.yml:
-config.yml Example
-
-# Path to DIAMOND reference database
-```python
-DB: "/absolute/path/to/CRASSIFY_DB.dmnd"
-
-# Metadata file containing protein annotations
-metadata: "/absolute/path/to/ICTV_metadata.csv"
-
-# Input files (can be nucleotide or protein)
-input_files:
-  - path: "sample_data/test_phages_nucl/pooled_test_phages.fna"
-    type: "nucleotide"  # or "protein"
-
-# Output directory
-output_directory: "/path/to/crassify_output"
-
-# Path to DecentTree binary (for phylogenetic tree generation)
-decenttree: "/path/to/decenttree/build/decenttree"
-```
-
-# Installing decenttree
-```bash
-git clone https://github.com/iqbal-lab-org/DecentTree.git
-cd DecentTree
-mkdir build && cd build
-cmake ..
-make -j4
-```
-(Optional) Add to PATH:
-```bash
-export PATH="$PWD:$PATH"
-```
-Or specify this path in your config.yml:
-```python
-decenttree: "/path/to/DecentTree/build/decenttree"
-```
-
-## 🧪 Building and Compiling Your Own Reference Database
+## Building and Compiling Your Own Reference Database
 
 You can build a custom Crassify-compatible database using your own set of viral proteomes.
 
-### 🔨 Step 1: Create a DIAMOND Database
+### Step 1: Create a DIAMOND Database
 
 ```bash
 diamond makedb --in your_viral_proteomes.faa -d VIRAL_DB.dmnd
 ```
 
-### Sample Output
-![Crassify Output](images/crassify_soil_contigs_metadata.png)
+### Step 2: Update/or add metadata corresponding to your viral genomes 
+Add metadata corresponding to your viral genomes in the format as seen in data/crassify_metadata.csv
