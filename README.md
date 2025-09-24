@@ -24,6 +24,18 @@ mamba env create -f environment.yml
 mamba activate crassify
 ```
 
+### Test installation
+
+Once you have setup and activated the crassify environment you can test the installation by running:
+
+```bash
+snakemake -j 8
+```
+The default config.yml is set up to run on the test data e.g:
+
+
+### Config.yml
+
 ## Features
 
 - Fast, DIAMOND-based alignment of input proteins to reference DB
