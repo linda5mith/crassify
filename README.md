@@ -11,7 +11,22 @@
 
 ![Crassify Workflow](images/crassify_workflow.png)
 
-Crassify uses **DIAMOND** to align input proteomes against a curated reference database of 14,329 ICTV-classified viral genomes.
+## 🧩 Where does Crassify fit in your pipeline?
+
+Crassify can be used **after viral contigs have been identified** in your metagenomic data but can also be used as a quick method to identify viral contigs in metagenomes.
+
+If you already ran tools such as VIBRANT or VirSorter2 - or any other viral discovery pipeline - you’ll often end up with a large set of putative viral genomes/contigs.  
+
+The next big question is: **what are they, and how do they relate to known viruses?**
+
+That’s where **Crassify** comes in:  
+
+- Uses a curated database of ICTV-classified viral genomes (14,000+ references).  
+- Assigns taxonomy to your contigs by comparing **entire proteomes**, not just marker genes.  
+- Provides metrics like **viral content, genome completeness, and novelty score** to help decide if your contig represents a known virus or something new.  
+- Produces **distances** and **summary visualizations** for downstream phylogenetic or ecological analyses.  
+
+In short: **Run your favorite viral discovery tool → feed the predicted viral contigs into Crassify → get taxonomy + relatedness to ICTV reference genomes.**
 
 ## Installation
 
@@ -31,7 +46,7 @@ pip install -e .
 crassify -i sample_data/test_phages_nucl/pooled_test_phages.fna -o ~/crassify_test
 ```
 
-## 📄 Output
+## Output
 
 Crassify produces several output files:  
 
@@ -77,7 +92,7 @@ Crassify produces several output files:
 
 ---
 
-Example visualization:  
+Example output visualization:  
 ![Crassify Output](images/crassify_soil_contigs_metadata.png)
 
 ---
