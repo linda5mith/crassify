@@ -102,3 +102,6 @@ You can build a custom Crassify-compatible database using your own set of viral 
 ```bash
 diamond makedb --in your_viral_proteomes.faa -d VIRAL_DB.dmnd
 ```
+
+### Sample Output
+![Crassify Output](images/crassify_soil_contigs_metadata.png)
