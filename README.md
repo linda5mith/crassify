@@ -1,18 +1,21 @@
-# 🧬 Crassify: Protein-Based Viral Taxonomy Tool
+# Crassify: Protein-Based Viral Taxonomy Tool
 
-**Crassify** is a high-throughput tool for computing relatedness between viral genomes using whole-proteome pairwise protein alignments. Designed for metagenomic datasets, it enables:
+![Crassify Workflow](images/crassify_logo.png)
+
+**Crassify** is a high-throughput, fast tool for computing relatedness between viral genomes using whole-proteome pairwise protein alignments. Designed for metagenomic datasets, it enables:
 
 - Rapid viral species detection
 - Novelty detection
-- Circularity checks
+- MAG completeness estimation
 - Phylogenetic distance estimation
 
+![Crassify Workflow](images/crassify_workflow.png)
 
 Crassify uses **DIAMOND** to align input proteomes against a curated reference database of 14,329 ICTV-classified viral genomes.
 
 ---
 
-## 🚀 Features
+## Features
 
 - Fast, DIAMOND-based alignment of input proteins to reference DB
 - Computes:
@@ -28,7 +31,7 @@ Crassify uses **DIAMOND** to align input proteomes against a curated reference d
 
 ---
 
-## 📦 Input Files
+## Input Files
 
 Crassify takes either:
 - **Nucleotide sequences** (that get translated), or
@@ -37,38 +40,22 @@ Crassify takes either:
 
 ---
 
-## 📂 Crassify Reference Database (Required)
-
-To run Crassify, you need the following files:
-
-| File                 | Description                                | Required |
-|----------------------|--------------------------------------------|----------|
-| `CRASSIFY_DB.dmnd`   | DIAMOND-formatted reference database       | ✅        |
-| `ICTV_metadata.csv`  | Metadata for protein accessions            | ✅        |
-| `viral_proteomes.faa`| Raw protein sequences (for rebuilding DB)  | ❌*       |
-
-\*Optional — only required if you wish to modify or rebuild the database.
-
-📥 Download here:  
-[Crassify Reference DB (Dropbox)](https://www.dropbox.com/scl/fo/1d7c3b12gmtbx7015d70n/ABYuv5Uih-px6FRAku24N3w?rlkey=d4zvy4yy2dd35ypd1mh77kk7a&st=abgdbq8t&dl=0)
-
-Once downloaded, configure the file paths in `config.yml`.
-
----
 
 ## 🛠 Installation
 
-### Using Conda and `environment.yml`
+### Using Conda/Mamba and `environment.yml`
 
 ```bash
-conda env create -f environment.yml
-conda activate crassify
+git clone https://github.com/linda5mith/crassify.git .
+cd crassify
+mamba env create -f environment.yml
+mamba activate crassify
 ```
 
-## 🧬 Running Crassify with Snakemake
+## Running Crassify with Snakemake
 
 After downloading the Crassify reference database, update the paths in your config.yml:
-🔧 config.yml Example
+config.yml Example
 
 # Path to DIAMOND reference database
 ```python

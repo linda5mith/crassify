@@ -2,7 +2,8 @@
 
 input:
   type: nucleotide
-  path: /home/administrator/phd/soil_2025/combined_easy_cluster_min_seq_id_0.95_rep_seq.phages_combined.fna
+  path: /home/administrator/phd/soil_2025/VIRAL_CONTIGS_GLOBAL/all_soil_phages.fna
+  #/home/administrator/phd/soil_2025/combined_easy_cluster_min_seq_id_0.95_rep_seq.phages_combined.fna
 
 db:
   dmnd: data/crassify_DB_2025.dmnd

@@ -32,18 +32,20 @@ class ViralPercentageCalculator:
         pairwise = (
             self.matches
             .groupby(["qseqid_genome_ID", "sseqid_genome_ID"])
-            .agg({"length": "sum", "bitscore": "max", "sseqid_genome_length": "first", "sseqid_virus": "first"})
+            .agg({"length": "sum", "bitscore": "sum", 
+                  "sseqid_genome_length": "first", 
+                  "sseqid_virus": "first"})
             .reset_index()
             .rename(columns={
                 "length": "total_aln_length",
-                "bitscore": "max_bitscore",
+                "bitscore": "total_bitscore",
                 "sseqid_virus": "subject_virus"
             })
         )
 
-        # 3. For each query genome, pick the subject with highest bitscore
+        # 3. For each query genome, pick the subject with longest total protein alignment + highest bitscore
         best_hits = pairwise.loc[
-            pairwise.groupby("qseqid_genome_ID")["max_bitscore"].idxmax(),
+            pairwise.groupby("qseqid_genome_ID")["total_bitscore"].idxmax(),
             ["qseqid_genome_ID", "sseqid_genome_ID", "subject_virus", "sseqid_genome_length", "total_aln_length"]
         ].rename(columns={
             "qseqid_genome_ID": "genome_ID",

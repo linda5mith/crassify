@@ -1,0 +1,24 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job                     count
+--------------------  -------
+all                         1
+crassify                    1
+run_diamond_blastp          1
+translate_metagenome        1
+visualize                   1
+total                       5
+
+Select jobs to execute...
+
+[Wed Sep 24 16:54:34 2025]
+rule translate_metagenome:
+    input: /home/administrator/phd/soil_2025/VIRAL_CONTIGS_GLOBAL/all_soil_phages.fna
+    output: /home/administrator/phd/crassify_out_2025-09-24/diamond_db/query_proteomes.faa
+    jobid: 4
+    reason: Missing output files: /home/administrator/phd/crassify_out_2025-09-24/diamond_db/query_proteomes.faa; Set of input files has changed since last execution
+    resources: tmpdir=/tmp
+

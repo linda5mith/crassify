@@ -1,0 +1,38 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job                     count
+--------------------  -------
+all                         1
+crassify                    1
+run_diamond_blastp          1
+translate_metagenome        1
+visualize                   1
+total                       5
+
+Select jobs to execute...
+
+[Wed Sep 24 16:40:53 2025]
+rule translate_metagenome:
+    input: /home/administrator/phd/crassify_v2/sample_data/test_phages_nucl
+    output: /home/administrator/phd/crassify_out_2025-09-24/diamond_db/query_proteomes.faa
+    jobid: 4
+    reason: Set of input files has changed since last execution
+    resources: tmpdir=/tmp
+
+[Wed Sep 24 16:40:53 2025]
+Error in rule translate_metagenome:
+    jobid: 4
+    input: /home/administrator/phd/crassify_v2/sample_data/test_phages_nucl
+    output: /home/administrator/phd/crassify_out_2025-09-24/diamond_db/query_proteomes.faa
+    shell:
+        prodigal -i /home/administrator/phd/crassify_v2/sample_data/test_phages_nucl -a /home/administrator/phd/crassify_out_2025-09-24/diamond_db/query_proteomes.faa -p meta -m
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+Removing output files of failed job translate_metagenome since they might be corrupted:
+/home/administrator/phd/crassify_out_2025-09-24/diamond_db/query_proteomes.faa
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: .snakemake/log/2025-09-24T164053.693859.snakemake.log
