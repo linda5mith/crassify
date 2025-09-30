@@ -1,10 +1,7 @@
 import argparse
 from rich.console import Console
 from rich.markdown import Markdown
-from genome_proteome import GenomeProteomeMapper
-from metadata import MetadataMerger
-from viral_percentage import ViralPercentageCalculator
-from viral_distance import VirusDistanceCalculator
+from crassify.scripts import GenomeProteomeMapper, MetadataMerger, ViralDistanceCalculator, ViralPercentageCalculator, make_summary_plot
 import os
 
 def main():
@@ -38,7 +35,7 @@ def main():
     vpc = ViralPercentageCalculator(merged_matches, generated_metadata, args.output_dir)
     percentage_viral_df = vpc.calculate_percentage_viral()
 
-    vdc = VirusDistanceCalculator(merged_matches, percentage_viral_df, args.output_dir)
+    vdc = ViralDistanceCalculator(merged_matches, percentage_viral_df, args.output_dir)
     vdc.compute_distances()
     #vdc.create_phylip_table()
 

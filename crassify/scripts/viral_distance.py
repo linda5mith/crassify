@@ -4,7 +4,7 @@ import os
 from tqdm import tqdm
 
 
-class VirusDistanceCalculator:
+class ViralDistanceCalculator:
     """
     Compute directional inter-genome distances and top hits.
     Keeps query (contig) → subject (reference) direction.

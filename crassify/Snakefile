@@ -1,4 +1,3 @@
-configfile: "config.yaml"
 import os
 from datetime import datetime
 
@@ -43,7 +42,7 @@ rule crassify:
     params:
         outdir=output_dir
     shell:
-        "python scripts/cli.py -p {input.query} -m {input.matches} "
+        "python -m crassify.scripts.cli -p {input.query} -m {input.matches} "
         "--metadata {input.metadata} -o {params.outdir}"
 
 rule visualize:
@@ -52,5 +51,5 @@ rule visualize:
     output:
         os.path.join(output_dir, "crassify_summary.pdf")
     run:
-        from scripts.visualize import make_summary_plot
+        from crassify.scripts.visualize import make_summary_plot
         make_summary_plot(input[0], output_dir)

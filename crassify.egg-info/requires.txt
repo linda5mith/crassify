@@ -1,5 +1,0 @@
-snakemake
-pandas
-tqdm
-rich
-pyyaml

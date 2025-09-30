@@ -3,14 +3,20 @@ import argparse, os, yaml, subprocess
 from datetime import datetime
 from rich.console import Console
 from rich.markdown import Markdown
+import importlib.resources as ir
+
+def get_default_data_path(fname):
+    return str(ir.files("crassify").joinpath("data", fname))
 
 def main():
     parser = argparse.ArgumentParser(description="Crassify: protein-based viral taxonomy tool")
     parser.add_argument("-i", "--input", required=True, help="Path to input FASTA (nucleotide or protein)")
     parser.add_argument("-o", "--outdir", required=True, help="Output directory")
     parser.add_argument("-t", "--type", choices=["nucleotide", "protein"], default="nucleotide")
-    parser.add_argument("--db", default="data/crassify_DB_2025.dmnd", help="Path to DIAMOND DB")
-    parser.add_argument("--metadata", default="data/crassify_metadata.csv", help="Path to metadata CSV")
+    parser.add_argument("--db", default=get_default_data_path("crassify_DB_2025.dmnd"),
+                    help="Path to DIAMOND DB")
+    parser.add_argument("--metadata", default=get_default_data_path("crassify_metadata.csv"),
+                        help="Path to DIAMOND DB metadata")
     args = parser.parse_args()
 
     console = Console()
