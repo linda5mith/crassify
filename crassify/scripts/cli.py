@@ -10,6 +10,13 @@ def main():
     parser.add_argument("-o", "--output_dir", required=True)
     parser.add_argument("-m", "--matches", required=True)
     parser.add_argument("-md", "--metadata", required=True)
+    parser.add_argument(
+        "-c", "--cores",
+        type=int,
+        default=8,
+        help="Number of CPU cores to use (passed to Snakemake)."
+    )
+
     args = parser.parse_args()
 
     MARKDOWN = """

@@ -17,6 +17,13 @@ def main():
                     help="Path to DIAMOND DB")
     parser.add_argument("--metadata", default=get_default_data_path("crassify_metadata.csv"),
                         help="Path to DIAMOND DB metadata")
+    parser.add_argument(
+    "-c", "--cores",
+        type=int,
+        default=8,   
+        help="Number of CPU cores to use (passed to Snakemake). Default: 8."
+    )
+
     args = parser.parse_args()
 
     console = Console()
@@ -42,6 +49,12 @@ def main():
 
     # Run Snakemake
     snakefile_path = os.path.join(os.path.dirname(__file__), "Snakefile")
-    cmd = ["snakemake", "--snakefile", snakefile_path, "--configfile", resolved_config, "--cores", "all"]
+    cmd = [
+        "snakemake",
+        "--snakefile", snakefile_path,
+        "--configfile", resolved_config,
+        "--cores", str(args.cores)
+    ]
+
     console.print("[bold green]Running Snakemake...[/bold green]")
     subprocess.run(cmd, check=True)
